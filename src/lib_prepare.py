@@ -4,41 +4,32 @@ import numpy as np
 
 pi = np.pi
 
-def rotate_2d_ccw(angle):
-    #watch out; angle must be given in degrees
-    angle_in_rads = angle*pi/180
-    s, c = sin(angle_in_rads), cos(angle_in_rads)
-    return np.array([[c, -s], [s, c]])
-
 @dataclass
 class HoneycombInfo:
     edgetype: str
     W:        int
     L:        int
 
-    def create_lattice_vectors(self, angle):
-        rot = rotate_2d_ccw(angle)
-        a0 = rot @ np.array([1, 0])
-        a1 = rot @ np.array([0, 1])
+    def create_lattice_vectors(self):
+        a0, a1 = np.eye(2)
         if self.edgetype == 'armchair':
-            a0_t = 2*a0 - a1
-            a1_t = 2*a1 - a0
+            a0_t, a1_t = 2*a0 - a1, 2*a1 - a0
             a0, a1 = a0_t, a1_t
-        return [self.W*a0, self.L*a1]
+        return [self.W * a0, self.L * a1]
 
 class HoneycombPresets:
     clusters = { }
 
-    def add_cluster(self, label, edgetype, W, L, angle):
-        self.clusters[label] = HoneycombInfo(edgetype, W, L).create_lattice_vectors(angle)
+    def add_cluster(self, label, edgetype, W, L):
+        self.clusters[label] = HoneycombInfo(edgetype, W, L).create_lattice_vectors()
 
     def __init__(self):
-        self.add_cluster('24-site', 'armchair', 2, 2, 60)
-        self.add_cluster('18-site',   'zigzag', 3, 3,  0)
-        self.add_cluster('12-site',   'zigzag', 2, 3,  0)
-        self.add_cluster( '6-site', 'armchair', 1, 1, 60)
-        self.add_cluster( '4-site',   'zigzag', 1, 2,  0)
-        self.add_cluster( '2-site',   'zigzag', 1, 1,  0)
+        self.add_cluster('24-site', 'armchair', 2, 2)
+        self.add_cluster('18-site',   'zigzag', 3, 3)
+        self.add_cluster('12-site',   'zigzag', 2, 3)
+        self.add_cluster( '6-site', 'armchair', 1, 1)
+        self.add_cluster( '4-site',   'zigzag', 1, 2)
+        self.add_cluster( '2-site',   'zigzag', 1, 1)
 
 class TwoBodyHamiltonian:
     def make_kitaev_hamiltonian(self, j, k, g, gp):

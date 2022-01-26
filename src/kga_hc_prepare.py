@@ -6,7 +6,7 @@ model          = 'SpinGC'
 method         = 'CG'
 lattice        = 'Honeycomb Lattice'
 #--------------------lattice parameters
-a0, a1         = HoneycombPresets().clusters['18-site']
+a0, a1         = HoneycombPresets().clusters['24-site']
 #--------------------conserved quantities
 two_sz         = 0              #will be set to None if 'SpinGC' is selected
 #--------------------Hamiltonian parameters
