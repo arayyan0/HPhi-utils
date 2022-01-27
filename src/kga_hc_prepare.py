@@ -1,4 +1,4 @@
-from lib_prepare import HoneycombPresets, TwoBodyHamiltonian, StandardInput, pi
+from lib_prepare import HoneycombClusterPresets, TwoBodyHamiltonian, StandardInput, pi
 from math import sin, cos, sqrt
 import os
 #--------------------parameters for type of calculation
@@ -6,7 +6,9 @@ model          = 'SpinGC'
 method         = 'CG'
 lattice        = 'Honeycomb Lattice'
 #--------------------lattice parameters
-a0, a1         = HoneycombPresets().clusters['24-site']
+sites          = 4
+shape          = 'RE'
+a0, a1         = HoneycombClusterPresets().clusters[f'{sites}-'+shape]
 #--------------------conserved quantities
 two_sz         = 0              #will be set to None if 'SpinGC' is selected
 #--------------------Hamiltonian parameters

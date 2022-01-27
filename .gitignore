@@ -1,7 +1,9 @@
-# Libraries
+# Scripts
+*.sh
 
 # Output Files
 out*/
+clusters/
 
 # Mac
 .DS_Store

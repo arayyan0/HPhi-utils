@@ -4,32 +4,46 @@ import numpy as np
 
 pi = np.pi
 
-@dataclass
-class HoneycombInfo:
-    edgetype: str
-    W:        int
-    L:        int
-
-    def create_lattice_vectors(self):
-        a0, a1 = np.eye(2)
-        if self.edgetype == 'armchair':
-            a0_t, a1_t = 2*a0 - a1, 2*a1 - a0
-            a0, a1 = a0_t, a1_t
-        return [self.W * a0, self.L * a1]
-
-class HoneycombPresets:
-    clusters = { }
-
-    def add_cluster(self, label, edgetype, W, L):
-        self.clusters[label] = HoneycombInfo(edgetype, W, L).create_lattice_vectors()
+class UnitCellPresets:
+    #unit cell shape presets
+    unit_cells = { }
+    def add_unit_cell(self, label, A0, A1):
+        self.unit_cells[label] = [A0, A1]
 
     def __init__(self):
-        self.add_cluster('24-site', 'armchair', 2, 2)
-        self.add_cluster('18-site',   'zigzag', 3, 3)
-        self.add_cluster('12-site',   'zigzag', 2, 3)
-        self.add_cluster( '6-site', 'armchair', 1, 1)
-        self.add_cluster( '4-site',   'zigzag', 1, 2)
-        self.add_cluster( '2-site',   'zigzag', 1, 1)
+        a0, a1 = np.eye(2)
+        self.add_unit_cell(   'rect',   a0 - a1,   a0 + a1)
+        self.add_unit_cell('rhom120', 2*a0 - a1, 2*a1 - a0)
+        self.add_unit_cell( 'rhom60',   a0 - a1,        a0)
+
+@dataclass
+class HoneycombInfo:
+    unitcell_shape: str
+    W:              int
+    L:              int
+
+    def create_lattice_vectors(self):
+        a0, a1 = UnitCellPresets().unit_cells[self.unitcell_shape]
+        return [self.W * a0, self.L * a1]
+
+class HoneycombClusterPresets:
+    clusters = { }
+    def add_cluster(self, label, unitcell, W, L):
+        #exception will be raised if "label" doesn't match any of the cluster presets
+        self.clusters[label] = HoneycombInfo(unitcell, W, L).create_lattice_vectors()
+
+    def __init__(self):
+        self.add_cluster(   '24-RE',    'rect', 3, 2)
+        self.add_cluster('24-RH120', 'rhom120', 2, 2)
+        self.add_cluster( '18-RH60',  'rhom60', 3, 3)
+        self.add_cluster(   '12-RE',    'rect', 3, 1)
+        self.add_cluster( '12-RH60',  'rhom60', 2, 3)
+        self.add_cluster(  '8-RH60',  'rhom60', 1, 4)
+        self.add_cluster( '6-RH120', 'rhom120', 1, 1)
+        self.add_cluster(  '6-RH60',  'rhom60', 1, 3)
+        self.add_cluster(    '4-RE',    'rect', 1, 1)
+        self.add_cluster(  '4-RH60',  'rhom60', 1, 2)
+        self.add_cluster(  '2-RH60',  'rhom60', 1, 1)
 
 class TwoBodyHamiltonian:
     def make_kitaev_hamiltonian(self, j, k, g, gp):

@@ -1,5 +1,6 @@
-from lib_prepare import HoneycombPresets, TwoBodyHamiltonian, StandardInput, pi
-from math import sin, cos
+from lib_prepare import HoneycombClusterPresets, TwoBodyHamiltonian, StandardInput, pi
+from math import sin, cos, atan
+import os
 
 def parameterize_multipole_by_angles(theta, phi, jb):
     return [cos(theta*pi), jb, sin(theta*pi)*cos(phi*pi), sin(theta*pi)*sin(phi*pi)]
@@ -9,11 +10,13 @@ model          = 'SpinGC'
 method         = 'Lanczos'
 lattice        = 'Honeycomb Lattice'
 #--------------------lattice parameters
-a0, a1         = HoneycombPresets().clusters['6-site']
+sites          = 4
+shape          = 'RE'
+a0, a1         = HoneycombClusterPresets().clusters[f'{sites}-'+shape]
 #--------------------conserved quantities
 two_sz         = 0              #will be set to None if 'SpinGC' is selected
 #--------------------Hamiltonian parameters
-theta, phi, jb = 0.5, 0.25, 0
+theta, phi, jb = atan(1/2)/pi, 0.5, 0
 jt, jb, jq, jo = parameterize_multipole_by_angles(theta, phi, jb)
 H0, H1, H2     = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
 #--------------------parameters for the numerical condition
@@ -34,5 +37,8 @@ simulation     = StandardInput(model, method, lattice,
 simulation.check_availability() #since I only implemented a subset of HPhi features
 simulation.ensure_consistency()
 
+output_path = f'out/'
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 filename = 'stan.in'
-simulation.create_file(filename)
+simulation.create_file(output_path+filename)
