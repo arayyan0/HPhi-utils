@@ -6,13 +6,13 @@ model          = 'SpinGC'
 method         = 'CG'
 lattice        = 'Honeycomb Lattice'
 #--------------------lattice parameters
-sites          = 18
+sites          = 12
 shape          = 'RH60'
 a0, a1         = HoneycombClusterPresets().clusters[f'{sites}-'+shape]
 #--------------------conserved quantities
 two_sz         = 0              #will be set to None if 'SpinGC' is selected
 #--------------------Hamiltonian parameters
-j, k, g, gp    = -1, 0, 0, 0
+j, k, g, gp    = -1/2, +1, 0, 0
 H0, H1, H2     = TwoBodyHamiltonian().make_kitaev_hamiltonian(j, k, g, gp)
 #--------------------parameters for the numerical condition
 restart        = 'None'

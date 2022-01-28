@@ -15,7 +15,6 @@ class UnitCellPresets:
         self.add_unit_cell(   'rect',   a0 - a1,   a0 + a1)
         self.add_unit_cell('rhom120', 2*a0 - a1, 2*a1 - a0)
         self.add_unit_cell( 'rhom60',   a0 - a1,        a0)
-
 @dataclass
 class HoneycombInfo:
     unitcell_shape: str
