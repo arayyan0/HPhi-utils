@@ -6,8 +6,8 @@ model          = 'SpinGC'
 method         = 'CG'
 lattice        = 'Honeycomb Lattice'
 #--------------------lattice parameters
-sites          = 4
-shape          = 'RE'
+sites          = 18
+shape          = 'RH60'
 a0, a1         = HoneycombClusterPresets().clusters[f'{sites}-'+shape]
 #--------------------conserved quantities
 two_sz         = 0              #will be set to None if 'SpinGC' is selected
@@ -19,7 +19,7 @@ restart        = 'None'
 lanczos_max    = 2000           #number of Lanczos/LOBCG steps
 exct           = 2              #number of states to converge
 lanczos_target = exct+1         #target eigenenergy for convergence
-output_mode    = 'none'
+output_mode    = 'correlation'
 eigenvec_io    = 'None'
 ham_io         = 'None'         #will be set to None unless 'FullDiag' is selected
 #--------------------create instance create file, and output.
