@@ -1,10 +1,12 @@
 import sys
-
+import os
 # code should be run from within HPhi-utils
 filename = 'speedrun.sh'
-HPhi_build = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
+#HPhi_build = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
+HPhi_build = '/scratch/h/hykee/arayyan/HPhi.build/'
 output_folder = 'out'
-
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
 what_simulation = 'SSF'  #(either 'SSF' or 'simple')
 what_computer  = 'home' #(either 'home' or 'cluster')
 
