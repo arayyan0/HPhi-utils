@@ -15,7 +15,7 @@ class TriangularSymmetryPoints:
         self.conventional_unit_cell = conventional_unit_cell
         #positions are given in the primitive unit cell enclosing HC z-bond
         self.add_symmetrypoint( 'X', np.array([-1/2, 1/2, 0]))
-        self.add_symmetrypoint( 'K', np.array([-1/4, 1/4, 0]))
+        self.add_symmetrypoint( 'K', np.array([-1/3, 1/3, 0]))
         self.add_symmetrypoint( 'G', np.array([0, 0, 0]))
         self.add_symmetrypoint('M2', np.array([ 1/2, 1/2, 0]))
         self.add_symmetrypoint('Kp', np.array([2/3, 1/3, 0]))

@@ -14,6 +14,6 @@ A = np.array([A1, A2, A3])
 path = ['X', 'K', 'G', 'M2', 'Kp', 'Gp', 'M1', 'G']
 sym_points = TriangularSymmetryPoints(A, path)
 
-line_density    = 20 #number of k along the high symmetry points
+line_density    = 40 #number of k along the high symmetry points
 surface_density = 24 #linear dimension of k-grid for ssf surface
 sym_points.append_to_geometry(geometry_file, line_density, surface_density)
