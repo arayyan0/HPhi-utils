@@ -20,8 +20,8 @@ f.write(f'  command {HPhi_build}src/HPhi $mode $1\n')
 f.write('}\n')
 f.write('\n')
 # writing function shortcut for HPhi
-f.write(f'vim src/{project}_hc_prepare.py\n')
-f.write(f'python3 src/{project}_hc_prepare.py\n')
+f.write(f'vim src/prepare_standard.py\n')
+f.write(f'python3 src/prepare_standard.py\n')
 f.write('\n')
 #get into output folder, then figure out what to do
 f.write(f'cd {output_folder}\n')

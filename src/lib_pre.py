@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from math import sin, cos
+from math import sin, cos, sqrt
 import numpy as np
 
 pi = np.pi
@@ -15,6 +15,7 @@ class UnitCellPresets:
         self.add_unit_cell(   'rect',   a0 - a1,   a0 + a1)
         self.add_unit_cell('rhom120', 2*a0 - a1, 2*a1 - a0)
         self.add_unit_cell( 'rhom60',   a0 - a1,        a0)
+
 @dataclass
 class HoneycombInfo:
     unitcell_shape: str
@@ -43,6 +44,14 @@ class HoneycombClusterPresets:
         self.add_cluster(    '4-RE',    'rect', 1, 1)
         self.add_cluster(  '4-RH60',  'rhom60', 1, 2)
         self.add_cluster(  '2-RH60',  'rhom60', 1, 1)
+
+#parameters for model 1
+def parameterize_multipole_by_angles(theta, phi, jb):
+    return [cos(theta*pi), jb, sin(theta*pi)*cos(phi*pi), sin(theta*pi)*sin(phi*pi)]
+
+#parameters for model 2
+def parameterize_special_points_by_angle(xi):
+    return [1, sqrt(2/3)*sin(xi*pi), 0, cos(xi*pi)]
 
 class TwoBodyHamiltonian:
     def make_kitaev_hamiltonian(self, j, k, g, gp):
@@ -180,3 +189,65 @@ class StandardInput:
         if not self.ham_io == None:
             f.write(f'HamIO = "{self.ham_io}"\n')
         f.close()
+
+@dataclass
+class StandardInputAux:
+    loc_file:        str
+    trans_file:      str
+
+    hstrength:       float
+    hdirection:      np.ndarray
+
+    def check_file_existence(self):
+        #check if required files exist, and if so, slurp em
+        necessary_files = [loc_file, trans_file]
+        for file in necessary_files:
+            if not os.path.exists(file):
+                print(file + ' does not exist! run a *_prepare.py file and' +
+                             ' perform a dry standard run first.')
+                raise SystemExit
+
+    def extract_num_sites(self):
+        #extract number of sites using locspin file format in HPhi documentation (4.2.4)
+        with open(self.loc_file, 'r') as f:
+            self.sites = len(f.readlines())-5
+
+    def add_to_trans(self):
+        string_list = self.create_field_information()
+
+        #modify header; NTransfer should be equal to num_sites * 2 * 3
+        num_terms = len(string_list)
+        header_line = 'NTransfer' + ' '*7 + f'{num_terms}\n'
+
+        with open(self.trans_file, 'r') as f:
+            lines = f.readlines()
+        lines[1] = header_line
+        with open(self.trans_file, 'w') as f:
+            f.writelines(lines)
+
+        #add the field information to trans file
+        string = ''.join(string_list)
+        with open(self.trans_file, 'a') as f:
+            f.write(string)
+
+    def create_field_information(self):
+        hx, hy, hz = self.hstrength * self.hdirection/np.linalg.norm(self.hdirection)
+
+        #[(first term), (second term)]
+        #(create_spin_index, annihilate_spin_index, real part, imag part)
+        hx_spin_terms = [(0,1,+0.5*hx,+0.0*hx),(1,0,+0.5*hx,+0.0*hx)]
+        hy_spin_terms = [(0,1,+0.0*hy,-0.5*hy),(1,0,+0.0*hy,+0.5*hy)]
+        hz_spin_terms = [(0,0,+0.5*hz,+0.0*hz),(1,1,-0.5*hz,+0.0*hz)]
+
+        string_list = []
+        for spin_terms in [hx_spin_terms, hy_spin_terms, hz_spin_terms]:
+            for site in range(self.sites):
+                for spin_term in spin_terms:
+                    string  = ' '*4 \
+                            + f'{site}' + ' '*5 + f'{spin_term[0]}' + ' '*5 \
+                            + f'{site}' + ' '*5 + f'{spin_term[1]}' + ' '*9 \
+                            + f'{spin_term[2]:.15f}' + ' '*8 \
+                            + f'{spin_term[3]:.15f}' \
+                            + f'\n'
+                    string_list.append(string)
+        return string_list
