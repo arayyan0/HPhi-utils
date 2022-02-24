@@ -9,8 +9,8 @@ if what_computer == 'laptop':
     HPhi_build = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
     run_preamble = ''
 elif what_computer == 'home':
-    #HPhi_build = 
-    #run_preamble =     
+    #HPhi_build =
+    #run_preamble =
     pass
 elif what_computer == 'niagara':
     HPhi_build = '/scratch/h/hykee/arayyan/HPhi.build/'
@@ -59,7 +59,7 @@ f.write('\n')
 
 if what_simulation == 'SSF':
     #append to geometry.dat
-    f.write('python3 ../src/ssf_post.py\n')
+    f.write('python3 ../src/ssf_post.py ../out/geometry.dat\n')
     #run greenr2k to calculate reciprocal lattice properties
     f.write(f'{HPhi_build}tool/greenr2k namelist.def geometry.dat\n')
     f.write('\n')

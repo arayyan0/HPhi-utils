@@ -1,8 +1,9 @@
 from lib_post import TriangularSymmetryPoints
 import numpy as np
 from math import sqrt
+import sys
 
-geometry_file   = '../out/geometry.dat'
+geometry_file   = sys.argv[1]
 with open(geometry_file,'r') as f:
     file_info = f.readlines()
 

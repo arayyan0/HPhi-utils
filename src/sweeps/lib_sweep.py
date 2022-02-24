@@ -117,7 +117,7 @@ class HPhiSweeps:
         output_mode = stan_cli_list[-2]
         if output_mode == 'correlation':
             #-append to geometry.dat
-            f.write(f'python3 '+ self.PWD+'/src/ssf_post.py\n')
+            f.write(f'python3 '+ self.PWD+'/src/ssf_post.py geometry.dat\n')
             #-run greenr2k to calculate reciprocal lattice properties
             f.write(f'{self.HPhiBuild}tool/greenr2k namelist.def geometry.dat\n')
             #-create gp_script.gp
