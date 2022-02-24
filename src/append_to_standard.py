@@ -9,7 +9,7 @@ trans_file = output_path + 'trans.def'
 #--------------------parameters for magnetic field
 X, Y, Z = np.eye(3)
 
-hstrength      = 1
+hstrength      = 0
 htheta         = 0 #(in degrees, pointing from Y direction towards Z direction)
 hdirection     = cos(htheta/180*pi)*Y + sin(htheta/180*pi)*Z
 #--------------------read necessary info and modify the trans file
