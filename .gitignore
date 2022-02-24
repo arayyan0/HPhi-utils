@@ -1,5 +1,6 @@
 # Scripts
 *.sh
+jobrun_*
 
 # Output Files
 out*/
