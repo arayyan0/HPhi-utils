@@ -50,7 +50,8 @@ class HPhiSweeps:
             pass
         elif self.WhatComputer == 'niagara':
             self.HPhiBuild = '/gpfs/fs0/scratch/h/hykee/arayyan/HPhi.build/'
-            self.RunPreamble = f'mpiexec -np {self.NProc}'
+            # self.RunPreamble = f'mpiexec -np {self.NProc}'
+            self.RunPreamble = ''
 
         self.Labels = params_label_list
         self.Params = []

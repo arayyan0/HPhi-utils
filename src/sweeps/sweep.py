@@ -36,7 +36,7 @@ if ham_model == 'gen_jtau':
     pass
 elif ham_model == 'xi':
     #model 2: jtau and jq fixed, tuning jo and jb
-    xi_val_list, xi_label = [0.300, 0.360, 0.003], "xi"
+    xi_val_list, xi_label = [0.000, 0.030, 0.010], "xi"
     params_list = [xi_val_list]
     params_label_list = [xi_label]
 elif ham_model == 'jkggp':
