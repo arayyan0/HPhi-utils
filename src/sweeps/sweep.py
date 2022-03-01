@@ -18,11 +18,11 @@ hpc_settings = [num_processes, ntasks_per_node, nodes, time]
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
 method         = 'CG'
-sites          = 6
-shape          = 'RH120'
+sites          = 18
+shape          = 'RH60'
 restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart'
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
-exct           = 1         #number of states to converge
+exct           = 4         #number of states to converge
 output_mode    = 'correlation'    #select 'none', 'correlation', 'full'
 ham_model      = 'xi'          #gen_jtau, xi, jkggp
 
@@ -36,7 +36,7 @@ if ham_model == 'gen_jtau':
     pass
 elif ham_model == 'xi':
     #model 2: jtau and jq fixed, tuning jo and jb
-    xi_val_list, xi_label = [0.000, 0.500, 0.05], "xi"
+    xi_val_list, xi_label = [0.300, 0.360, 0.003], "xi"
     params_list = [xi_val_list]
     params_label_list = [xi_label]
 elif ham_model == 'jkggp':
@@ -44,7 +44,7 @@ elif ham_model == 'jkggp':
     pass
 
 #----magnetic field magnitude
-h_val_list,  h_label = [1000.000, 1000.000, 0.20], "h"
+h_val_list,  h_label = [0.000, 0.000, 0.20], "h"
 
 params_list += [h_val_list]
 params_label_list += [h_label]
