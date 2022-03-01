@@ -149,7 +149,7 @@ class HPhiSweeps:
         f.write('module load python/3.9.8\n')      #for executing various scripts
         f.write('module load intel/2019u4 intelmpi/2019u4 scalapack\n') #for HPhi
         f.write('module load gnu-parallel\n\n')      #for the following
-        f.write(f'parallel --joblog {int(self.NBatch)} {self.OutputPath}/{self.JobTitle}.out --wd $PWD'+
+        f.write(f'parallel -j {int(self.NBatch)} --joblog {self.OutputPath}/{self.JobTitle}.out --wd $PWD'+
                  f' < {self.JobTitle}.lst\n')
         f.close()
 
