@@ -4,6 +4,26 @@ import os
 import stat
 import sys
 
+# @dataclass
+# class ComputerInfo:
+#     hphi_build_loc: str
+#     run_preamble:   int
+
+# class ComputerPresets:
+#     computers = { }
+#     def add_computer(self, label, hphi_build_loc, run_preamble, run_proc):
+#         self.computers[label] = ComputerInfo().create_computer_settings(hphi_build_loc, run_preamble)
+#
+#     def __init__(self):
+#         hphi_laptop = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
+#         preamble_laptop = ''
+#
+#         hphi_niagara = '/scratch/h/hykee/arayyan/HPhi.build/'
+#         preamble_niagara = f'mpiexec -np {self.NProc}'
+#         self.add_computer('laptop', hphi_laptop, preamble_laptop)
+#         self.add_computer('niagara', hphi_niagara, preamble_niagara)
+
+
 class HPhiSweeps:
     def __init__(self, run, what_computer,
                        hpc_settings,
@@ -99,6 +119,10 @@ class HPhiSweeps:
         f.write(f'  command {self.RunPreamble} {self.HPhiBuild}src/HPhi $1 $2\n')
         f.write('}\n\n')
 
+        f.write('HPhiDRY () {\n')
+        f.write(f'  command {self.HPhiBuild}src/HPhi -sdry $1\n')
+        f.write('}\n\n')
+
         # prepare cli and pipe to prep standard python script
         stan_cli_str = ' '.join(list(map(str, stan_cli_list)))
 
@@ -107,7 +131,7 @@ class HPhiSweeps:
 
         stan_str = '/'.join(filename.split('/')[:-1])+'/stan.in\n'
 
-        f.write(f'HPhiSC -sdry stan.in\n\n')
+        f.write(f'HPhiDRY stan.in\n\n')
 
         append_cli_str = ' '.join([f'{hd:.12f}' for hd in hdirection])
         f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' + append_cli_str + '\n\n')
