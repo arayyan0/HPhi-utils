@@ -9,7 +9,7 @@ with open(geometry_file,'r') as f:
 
 A1, A2, A3  = [np.array(
                         str.replace('\n','').split(' ')
-                        ).astype(np.int) for str in file_info[4:7]]
+                        ).astype(int) for str in file_info[4:7]]
 A = np.array([A1, A2, A3])
 
 path = ['X', 'K', 'G', 'M2', 'Kp', 'Gp', 'M1', 'G']

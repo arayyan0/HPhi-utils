@@ -55,9 +55,9 @@ htheta = 0
 hphi   = 0
 
 X, Y, Z = np.eye(3)
-h0 = sin(htheta/180*np.pi)*cos(hphi/180*np.pi)
-h1 = sin(htheta/180*np.pi)*sin(hphi/180*np.pi)
-h2 = cos(htheta/180*np.pi)
+h0 = sin(htheta/180*np.pi)*cos(hphi/180*np.pi) #"x"
+h1 = sin(htheta/180*np.pi)*sin(hphi/180*np.pi) #"y"
+h2 = cos(htheta/180*np.pi)                     #"z"
 
 hdirection = h1*X + h2*Y + h0*Z #theta = 0 is +Y, theta=90 and phi=0 is +Z
 hdir_norm = hdirection/np.linalg.norm(hdirection)
