@@ -49,7 +49,7 @@ class HPhiSweeps:
             #self.RunPreamble =
             pass
         elif self.WhatComputer == 'niagara':
-            self.HPhiBuild = '/scratch/h/hykee/arayyan/HPhi.build/'
+            self.HPhiBuild = '/gpfs/fs0/scratch/h/hykee/arayyan/HPhi.build/'
             self.RunPreamble = f'mpiexec -np {self.NProc}'
 
         self.Labels = params_label_list

@@ -18,8 +18,8 @@ hpc_settings = [num_processes, ntasks_per_node, nodes, time]
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
 method         = 'CG'
-sites          = 18
-shape          = 'RH60'
+sites          = 6
+shape          = 'RH120'
 restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart'
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
 exct           = 4         #number of states to converge
