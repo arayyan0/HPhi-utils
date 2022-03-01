@@ -68,5 +68,5 @@ cwd = os.getcwd()
 sweep = HPhiSweeps(run, what_computer,
                    hpc_settings,
                    stan_cli_list,
-                   params_list, params_label_list, hdirection,
+                   params_list, params_label_list, hdir_norm,
                    cwd)
