@@ -1,27 +1,45 @@
+from dataclasses import dataclass
 import itertools as it
 import numpy as np
 import os
 import stat
 import sys
 
-# @dataclass
-# class ComputerInfo:
-#     hphi_build_loc: str
-#     run_preamble:   int
+@dataclass
+class ComputerInfo:
+    hphi_build_loc: str
+    mpiQ          : bool
+    hpc_settings  : list
 
-# class ComputerPresets:
-#     computers = { }
-#     def add_computer(self, label, hphi_build_loc, run_preamble, run_proc):
-#         self.computers[label] = ComputerInfo().create_computer_settings(hphi_build_loc, run_preamble)
-#
-#     def __init__(self):
-#         hphi_laptop = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
-#         preamble_laptop = ''
-#
-#         hphi_niagara = '/scratch/h/hykee/arayyan/HPhi.build/'
-#         preamble_niagara = f'mpiexec -np {self.NProc}'
-#         self.add_computer('laptop', hphi_laptop, preamble_laptop)
-#         self.add_computer('niagara', hphi_niagara, preamble_niagara)
+    def create_computer_settings(self):
+        [preamble, postamble] = self.create_ambles()
+        return [self.hphi_build_loc, preamble, postamble] + self.hpc_settings
+
+    def create_ambles(self):
+        preamble = ''
+        if self.mpiQ:
+            preamble += f'mpiexec -np {self.hpc_settings[2]}'
+        else:
+            preamble +=  ''
+
+        postamble = ''
+        if self.hpc_settings[0] > 1:
+            postamble += '--wd $PWD '
+        else:
+            postamble +=  ''
+        return [preamble, postamble]
+
+class ComputerPresets:
+    computers = { }
+    def add_computer(self, label, hphi_build_loc, mpiQ, hpc_settings):
+        self.computers[label] = ComputerInfo(hphi_build_loc, mpiQ, hpc_settings).create_computer_settings()
+
+    def __init__(self, hpc_settings):
+        hphi_laptop  = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
+        hphi_niagara = '/gpfs/fs0/scratch/h/hykee/arayyan/HPhi.build/'
+
+        self.add_computer( 'laptop',  hphi_laptop, False, hpc_settings)
+        self.add_computer('niagara', hphi_niagara,  True, hpc_settings)
 
 
 class HPhiSweeps:
@@ -32,27 +50,18 @@ class HPhiSweeps:
                        cwd):
 
         self.PWD = cwd
+        print(self.PWD)
 
         self.JobTitle = f"jobrun_{run}"
         print(self.JobTitle)
 
-        [self.NProc, self.NTasks, self.NNodes, self.Time] = hpc_settings
+        # [self.NNodes, self.NOMP, self.NMPI, self.NCoresPerNode, self.Time] = hpc_settings
 
         self.WhatComputer = what_computer
-        if self.WhatComputer == 'laptop':
-            self.HPhiBuild = '/Users/ahmed/Documents/University/PhD/Research/'+\
-                         'General/HPhi/HPhi.build/'
-            self.RunPreamble = ''
-        elif self.WhatComputer == 'home':
-            #to be implemented later
-            #self.HPhiBuild =
-            #self.RunPreamble =
-            pass
-        elif self.WhatComputer == 'niagara':
-            self.HPhiBuild = '/gpfs/fs0/scratch/h/hykee/arayyan/HPhi.build/'
-            # self.RunPreamble = f'mpiexec -np {self.NProc}'
-            self.RunPreamble = f'mpiexec -np 1'
-            # self.RunPreamble = ''
+        [self.HPhiBuild, self.RunPreamble,     self.Postamble, self.NNodes,
+              self.NOMP,        self.NMPI, self.NCoresPerNode,   self.Time] = \
+                ComputerPresets(hpc_settings).computers[self.WhatComputer]
+
 
         self.Labels = params_label_list
         self.Params = []
@@ -138,7 +147,9 @@ class HPhiSweeps:
         append_cli_str = ' '.join([f'{hd:.12f}' for hd in hdirection])
         f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' + append_cli_str + '\n\n')
 
-        f.write('HPhiSC -e namelist.def\n\n')
+        f.write(f'export OMP_NUM_THREADS={self.NOMP}\n')
+        f.write('HPhiSC -e namelist.def\n')
+        f.write(f'export OMP_NUM_THREADS=1\n\n')
 
         output_mode = stan_cli_list[-2]
         if output_mode == 'correlation':
@@ -157,17 +168,12 @@ class HPhiSweeps:
         f.close()
 
     def create_genesis_script(self):
-
-        self.NBatch = self.NNodes*self.NTasks/self.NProc
-        if not (self.NNodes*self.NTasks % self.NProc == 0):
-            print( 'Watch out. Number of parallel jobs (or batches) is not an integer. '+\
-                  f'Do NOT submit {self.JobTitle}.sh!')
-
         f = open(f'{self.JobTitle}.sh','w+')
         f.write('#!/bin/bash\n\n')
 
         f.write(f'#SBATCH --nodes={self.NNodes}'+'\n')
-        f.write(f'#SBATCH --ntasks-per-node={self.NTasks}'+'\n')
+        f.write(f'#SBATCH --ntasks-per-node={int(self.NCoresPerNode/self.NOMP)}'+'\n')
+        f.write(f'#SBATCH --cpus-per-task={self.NOMP}'+'\n')
         f.write(f'#SBATCH --time={self.Time}\n')
         f.write(f'#SBATCH --job-name={self.JobTitle}\n\n')
         f.write('cd $SLURM_SUBMIT_DIR\n\n')
@@ -175,8 +181,10 @@ class HPhiSweeps:
         f.write('module load python/3.9.8\n')      #for executing various scripts
         f.write('module load intel/2019u4 intelmpi/2019u4 scalapack\n') #for HPhi
         f.write('module load gnu-parallel\n\n')      #for the following
-        f.write(f'parallel -j {int(self.NBatch)} --joblog {self.OutputPath}/{self.JobTitle}.out --wd $PWD'+
-                 f' < {self.JobTitle}.lst\n')
+        f.write( f'parallel -j {int(self.NCoresPerNode/self.NOMP/self.NMPI)} ' +\
+                 f'--joblog {self.OutputPath}/{self.JobTitle}.out '  +\
+                                                     self.Postamble  +\
+                 f'< {self.JobTitle}.lst\n')
         f.close()
 
     def create_command_list(self):

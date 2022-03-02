@@ -8,12 +8,17 @@ from math import cos, sin
 run = 1
 what_computer = 'laptop'  #can be either 'laptop', 'home', or 'niagara'
 
-#the following are only really important for mode 'niagara'
-num_processes = 4         #isn't used unless 'niagara' is selected
-ntasks_per_node = 80
-nodes = 1
-time = '01:45:00'
-hpc_settings = [num_processes, ntasks_per_node, nodes, time]
+Ncorespernode = 4
+Nmpi          = pow(2,1)               #MUST BE a power of 2 for S=1/2
+if (Ncorespernode % Nmpi == 0):
+    Nomp      = int(Ncorespernode/Nmpi/2) #SHOULD BE AN INTEGER
+else:
+    print("Check the cores! N_corespernode/N_mpi/N_omp should be an integer.")
+    raise SystemExit
+
+Nnodes        = 1
+time          = '00:15:00'
+hpc_settings = [Nnodes, Nomp, Nmpi, Ncorespernode, time]
 #-----------------------------------------------------------
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
