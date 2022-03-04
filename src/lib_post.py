@@ -49,48 +49,43 @@ class TriangularSymmetryPoints:
 
 class HPhiOutput:
     def __init__(self, folder):
-        lanczos_step_file = glob.glob(folder + 'output/*Lanczos_Step*')
+        #extract number of sites
+        self.LocSpinFile = glob.glob(folder + 'locspn.def')[0]
+        self.NSites = self.extract_number_sites()
+
+        #extract lanczos step energies. Warning: full precision is not provided in this file.
+        self.LanczosStepFile = glob.glob(folder + 'output/*Lanczos_Step*')[0]
+        self.LanczosSteps, lanczos_energies = self.extract_lanczos_step()
+        self.LanczosEnergies = lanczos_energies/self.NSites
+
+        self.NStates = self.LanczosEnergies.shape[1]
+
+        #extract accurate energies IF the simulation finished
+        self.EnergyQ = True
         energy_file = glob.glob(folder + 'output/*energy.dat*')
-        self.plot_lanczos_step(lanczos_step_file[0])
-        self.extract_energies(energy_file[0])
-        pass
+        try:
+            file = energy_file[0]
+        except:
+            self.EnergyQ = False
+            print("Can't find energy file at " + folder)
+        else:
+            energies, self.GroundState = self.extract_energies(file)
+            self.Energies        =        energies/self.NSites
 
-    def extract_lanczos_step(self, file):
-        with open(file, 'r') as f:
-            content = f.readlines()[1:]
 
-        content_num = [line.replace('\n',' ').split() for line in content]
-        content_arr = np.array(content_num)
-
-        steps    = np.array(content_arr[:, 0 ], np.int  )
-        energies = np.array(content_arr[:, 3:], np.float)
-        return steps, energies
-
-    def plot_lanczos_step(self, file):
-        steps, energies = self.extract_lanczos_step(file)
-
-        states_num = energies.shape[1]
-
-        # plot of states over iterations
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        colors = prop_cycle.by_key()['color']
-        fig, ax = plt.subplots()
-        for i, color in zip(range(states_num), colors):
-            # c=np.random.rand(3,)
-            ax.scatter(steps, energies[:,i], marker="o",
-                                        # clip_on=False,
-                                        s=20,
-                                        facecolors='none',
-                                        edgecolors=color,
-                                        linewidth=1.5,
-                                        label=f'{i}th state')
-            ax.plot(steps, energies[:,i], ls='--')#, color=c)
-        plt.legend()
-        # plt.show()
-        # plt.savefig()
-        plt.close()
+    def extract_number_sites(self):
+        '''
+        extract the number of sites from the LocSpin File
+        '''
+        with open(self.LocSpinFile, 'r') as f:
+            content = f.readlines()
+        num_sites=int(content[1].replace('\n',' ').split(' ')[-4])
+        return num_sites
 
     def extract_energies(self, file):
+        '''
+        extract the energies from the Energy file
+        '''
         with open(file, 'r') as f:
             content = f.readlines()
 
@@ -100,11 +95,40 @@ class HPhiOutput:
             if z:
                 line_number_lst.append(line_number)
 
-        num_states = len(line_number_lst)
-        energies = [np.array(content)[line_number_lst][i].split(' ')[4] for i in range(num_states)]
+        energies = [np.array(content)[line_number_lst][i].split(' ')[4] for i in range(self.NStates)]
+        energy_arrays = np.array(list(map(float, energies)))
 
-        self.Energies = np.array(list(map(float, energies)))
-        self.GroundState = np.min(self.Energies)
+        return energy_arrays, np.min(energy_arrays)
+
+    def extract_lanczos_step(self):
+        '''
+        extract the energies from the LanczosStep file
+        '''
+        with open(self.LanczosStepFile, 'r') as f:
+            content = f.readlines()[1:]
+
+        content_num = [line.replace('\n',' ').split() for line in content]
+        content_arr = np.array(content_num)
+
+        steps    = np.array(content_arr[:, 0 ], np.int  )
+        energies = np.array(content_arr[:, 3:], np.float)
+        return steps, energies
+
+    def plot_lanczos_step(self):
+        subtracted_energies = self.LanczosEnergies - np.tile(self.LanczosEnergies[:,0], (self.NStates, 1)).T
+
+        # plot of states over iterations
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        fig, ax = plt.subplots()
+        for i, color in zip(range(self.NStates), colors):
+            ax.scatter(self.LanczosSteps, subtracted_energies[:,i], marker=".",clip_on=False,
+                       s=20, facecolors='none', edgecolors=color, linewidth=1.5, label=f'state {i}')
+            ax.plot(subtracted_energies[:,i], ls='--')
+        plt.legend()
+        ax.set_xlabel('Lanczos step')
+        ax.set_ylabel(r'$\frac{E-E_0}{N}$')
+        ax.set_ylim(0,np.max(subtracted_energies))
 
 def is_not_unique(params):
     bool_array = []
@@ -115,46 +139,28 @@ def is_not_unique(params):
         bool_array.append( ~(np.abs(a[0] - a) < tol).all() )
     return bool_array
 
-class FreeEnergyDerivatives:
+@dataclass
+class EnergyDerivatives:
+    paramlist:   np.ndarray
+    elist:       np.ndarray
+    factor:      float
+
     Colors = ["blue", "magenta", "green"] #nondark background
-    # Colors = ["turquoise", "limegreen", "orange"] #dark background
-    # Colors = ["turquoise", "limegreen", "orange", "red"] #dark background
 
-    def __init__(self, x_list, y_list, factor):
-        self.XList = x_list
-        self.YList = y_list
-        self.Factor = factor
+    def calculate_derivs(self):
+        self.m = -np.gradient(self.elist, self.paramlist, edge_order=2) / self.factor
+        self.chi = np.gradient(self.m, self.paramlist, edge_order=2) / self.factor
 
-    def PseudoMagnetization(self):
-        m = -np.gradient(self.YList, self.XList, edge_order=2) / self.Factor
-        return m
-
-    def PseudoSusceptibility(self):
-        m = self.PseudoMagnetization()
-        chi = np.gradient(m, self.XList, edge_order=2) / self.Factor
-        return chi
-
-    def ThirdDerivative(self):
-        chi = self.PseudoSusceptibility()
-        f = np.gradient(chi, self.XList, edge_order=2) / self.Factor
-        return f
-
-    def PlotSweep(self):
-        m = self.PseudoMagnetization()
-        chi = self.PseudoSusceptibility()
-        # f = self.ThirdDerivative()
-
-        functions = [self.YList, m, chi]
-        # functions = [self.YList, chi, m, f]
+    def plot_energy_derivs(self):
+        self.calculate_derivs()
+        functions = [self.elist, self.m, self.chi]
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-        # fig.subplots_adjust(top=1.5)
-        axes = [ax1, ax1.twinx(), ax2]
-        # axes = [ax1, ax2, ax1.twinx(), ax2.twinx()]
+        axes = [ax1, ax2, ax2.twinx()]
+        colors=["blue", "magenta", "green"]
 
-        for function, ax, color in zip(functions, axes, self.Colors):
-            # print(function, ax, color)
+        for function, ax, color in zip(functions, axes, colors):
             ax.scatter(
-                self.XList,
+                self.paramlist,
                 function,
                 marker=".",
                 # clip_on=False,
@@ -163,29 +169,109 @@ class FreeEnergyDerivatives:
                 edgecolors=color,
                 linewidth=1.5)
             ax.tick_params(axis="y", colors=color)
-        # axes[2].axhline(c='gray',ls="-.")
-        # ax2.axhline(color=self.Colors[1], ls="-.")
-        # ax2.set_ylim([-0.25,1.25])
-        # axes[2].set_ylim([-0.25,1.25])
-
-        # ax2.set_ylim([-10,10])
 
         ax1.grid(True, axis='x')
         ax2.grid(True, axis='x')
 
-        plt.xlim(min(self.XList), max(self.XList))
+        plt.xlim(min(self.paramlist), max(self.paramlist))
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-
         return fig
 
-    def PseudoSusceptibilityPeaks(self, prom):
-        f = self.PseudoSusceptibility()
+    def return_labels(self, TeXlabel_for_derivs):
+        ylabel = [
+        r"$\frac{E_0}{N}$",
+        r"$-\frac{1}{N}\frac{\mathrm{d}E_0}{\mathrm{d} %s }$" % (TeXlabel_for_derivs),
+        r"$-\frac{1}{N}\frac{\mathrm{d}^2E_0}{\mathrm{d}%s^2}$" % (TeXlabel_for_derivs)
+        ]
+        return ylabel
 
-        x_peak_list, f_peak_list = [], []
-        f_peaks, f_prominences = find_peaks(f, prominence=prom)
+def create_plot_filename(plot_type, plot_folder, param_block):
+    str = plot_folder + plot_type + ''.join(param_block) + '.pdf'
+    return str
 
-        for f_peak_index in f_peaks:
-            x_peak_list.append(self.XList[f_peak_index])
-            f_peak_list.append(f[f_peak_index])
+@dataclass
+class ParameterInfo:
+    TeXlabel: str
+    angleQ:   bool
 
-        return x_peak_list, f_peak_list, f_prominences["prominences"]
+    def add_pi_if_angle(self):
+        f   =      pi if self.angleQ else 1
+        str = r'/\pi' if self.angleQ else ''
+        self.factor    = f
+        self.TeXlabel_for_derivs  = self.TeXlabel
+        self.TeXlabel += str
+
+class ParameterPresets:
+    parameters = { }
+    def add_parameter(self, label, TeXlabel, angleQ):
+        x = ParameterInfo(TeXlabel, angleQ)
+        x.add_pi_if_angle()
+        self.parameters[label] = x
+
+    def __init__(self):
+        #j-k-g-gp
+        self.add_parameter(  'j',         'J', False)
+        self.add_parameter(  'k',         'K', False)
+        self.add_parameter(  'g',   r'\Gamma', False)
+        self.add_parameter( 'gp', r"\Gamma'",  False)
+        #multipolar_1
+        self.add_parameter(  't',   r'\theta',  True)
+        self.add_parameter(  'p',     r'\phi',  True)
+        self.add_parameter( 'jb',      r'J_B', False)
+        #multipolar_2
+        self.add_parameter( 'xi',      r'\xi',  True)
+        self.add_parameter('eps', r'\epsilon', False)
+        #magnetic field
+        self.add_parameter(  'h',         'h', False)
+
+class OneDParameterSweep:
+    def __init__(self, paramslist, energieslist, paramlabel, which_parameter_to_sort):
+        self.params, self.energies= list(map(np.array, [paramslist, energieslist]))
+        self.param_labels = paramlabel
+
+        self.sort_parameters(which_parameter_to_sort)
+
+        self.numstates = self.energies.shape[1]
+        # decide what to plot based on this value.
+
+    def sort_parameters(self, which_parameter_to_sort):
+        self.swept_param_info = ParameterPresets().parameters[which_parameter_to_sort]
+
+        self.swept_param_index = self.param_labels.index(which_parameter_to_sort)
+
+        idx          = np.argsort(self.params[:, self.swept_param_index])
+        self.params   = self.params[idx,:]
+        self.energies = self.energies[idx]
+
+    def plot_spectrum(self, ylim):
+        subtracted_energies = self.energies - np.tile(self.energies[:,0], (self.numstates, 1)).T
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        fig, ax = plt.subplots()
+        for i, color in zip(range(self.numstates),colors):
+            ax.scatter(self.params[:,self.swept_param_index], subtracted_energies[:,i],
+                        marker=".",
+                        # clip_on=False,
+                        s=20,
+                        facecolors='none',
+                        edgecolors=color,
+                        label=f'state {i}',
+                        linewidth=1.5)
+            ax.plot(self.params[:,self.swept_param_index], subtracted_energies[:,i], ls='--')#, color=c)
+        ax.set_xlabel('$'+self.swept_param_info.TeXlabel+'$')
+        ax.set_ylabel(r'$\frac{E-E_0}{N}$')
+        ax.set_ylim(0,ylim)
+        plt.legend()
+        return fig
+
+    def plot_gs_properties(self):
+        e_deriv = EnergyDerivatives(self.params[:,self.swept_param_index],
+                                    self.energies[:,0],
+                                    self.swept_param_info.factor)
+        labels = e_deriv.return_labels(self.swept_param_info.TeXlabel_for_derivs)
+        fig = e_deriv.plot_energy_derivs()
+        for ax, label, color in zip(fig.get_axes(),labels, EnergyDerivatives.Colors):
+            ax.set_ylabel(label, rotation = "horizontal",fontsize=12,labelpad=20,color=color)
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        fig.get_axes()[1].set_xlabel('$'+self.swept_param_info.TeXlabel+'$')
+        return fig
