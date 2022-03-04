@@ -3,7 +3,7 @@ import sys
 path_of_lib_pre = '/'.join(sys.argv[0].split('/')[:-2])
 sys.path.append(path_of_lib_pre)
 from lib_pre import HoneycombClusterPresets, TwoBodyHamiltonian, StandardInput, \
-                    parameterize_multipole_by_angles, parameterize_special_points_by_angle
+                    parameterize_multipole_by_angles, parameterize_multipole_by_epsilon
 #--------------------parameters for type of calculation
 model          = 'SpinGC'
 method         = sys.argv[1]
@@ -23,7 +23,7 @@ output_mode    = sys.argv[7]      #select 'none', 'correlation', 'full'
 eigenvec_io    = 'None'           #select 'None', 'Out', 'In'
 ham_io         = 'None'
 #--------------------Hamiltonian parameters
-ham_model = sys.argv[8] #'gen_jtau', 'xi', 'jkggp'
+ham_model = sys.argv[8] #'gen_jtau', 'eps', 'jkggp'
 
 params = sys.argv[9:]
 params_float = list(map(float, params))
@@ -33,10 +33,10 @@ if ham_model == 'gen_jtau':
     [theta, phi, jb] = params_float
     jt, jb, jq, jo = parameterize_multipole_by_angles(theta, phi, jb)
     H0, H1, H2     = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
-elif ham_model == 'xi':
+elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    [xi]             = params_float
-    jt, jb, jq, jo = parameterize_special_points_by_angle(xi)
+    [eps]             = params_float
+    jt, jb, jq, jo = parameterize_multipole_by_epsilon(eps)
     H0, H1, H2     = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model

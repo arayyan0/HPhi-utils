@@ -50,8 +50,8 @@ def parameterize_multipole_by_angles(theta, phi, jb):
     return [cos(theta*pi), jb, sin(theta*pi)*cos(phi*pi), sin(theta*pi)*sin(phi*pi)]
 
 #parameters for model 2
-def parameterize_special_points_by_angle(xi):
-    return [1, sqrt(2/3)*sin(xi*pi), 0, cos(xi*pi)]
+def parameterize_multipole_by_epsilon(eps):
+    return [1, (1+eps)/np.sqrt(2), 0, (1-eps)/2]
 
 class TwoBodyHamiltonian:
     def make_kitaev_hamiltonian(self, j, k, g, gp):

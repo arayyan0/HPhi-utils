@@ -27,9 +27,9 @@ sites          = 6
 shape          = 'RH120'
 restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart'
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
-exct           = 4         #number of states to converge
-output_mode    = 'correlation'    #select 'none', 'correlation', 'full'
-ham_model      = 'xi'          #gen_jtau, xi, jkggp
+exct           = 1         #number of states to converge
+output_mode    = 'none'    #select 'none', 'correlation', 'full'
+ham_model      = 'eps'          #gen_jtau, eps, jkggp
 
 stan_cli_list = [method, sites, shape, restart, lanczos_max,
                    exct, output_mode, ham_model]
@@ -39,11 +39,11 @@ stan_cli_list = [method, sites, shape, restart, lanczos_max,
 if ham_model == 'gen_jtau':
     # model 1: general jtau, jb, jq, jo
     pass
-elif ham_model == 'xi':
+elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    xi_val_list, xi_label = [0.000, 0.030, 0.010], "xi"
-    params_list = [xi_val_list]
-    params_label_list = [xi_label]
+    eps_val_list, eps_label = [-0.250, 0.250, 0.010], "eps"
+    params_list = [eps_val_list]
+    params_label_list = [eps_label]
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
     pass
