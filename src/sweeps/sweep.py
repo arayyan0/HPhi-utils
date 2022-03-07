@@ -6,9 +6,10 @@ from math import cos, sin
 #---------------------logistical details
 #---------------------------------------
 run = 1
-what_computer = 'laptop'  #can be either 'laptop', 'home', or 'niagara'
+what_computer = 'niagara'  #can be either 'laptop', 'home', or 'niagara'
 
 Ncorespernode = 4
+hyperthreadQ = False
 Nmpi          = pow(2,1)               #MUST BE a power of 2 for S=1/2
 if (Ncorespernode % Nmpi == 0):
     Nomp      = int(Ncorespernode/Nmpi/2) #SHOULD BE AN INTEGER
@@ -18,7 +19,7 @@ else:
 
 Nnodes        = 1
 time          = '00:15:00'
-hpc_settings = [Nnodes, Nomp, Nmpi, Ncorespernode, time]
+hpc_settings = [Nnodes, hyperthreadQ, Nomp, Nmpi, Ncorespernode, time]
 #-----------------------------------------------------------
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
@@ -41,7 +42,7 @@ if ham_model == 'gen_jtau':
     pass
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    eps_val_list, eps_label = [-0.250, 0.250, 0.010], "eps"
+    eps_val_list, eps_label = [-1.000, 0.000, 1.000], "eps"
     params_list = [eps_val_list]
     params_label_list = [eps_label]
 elif ham_model == 'jkggp':

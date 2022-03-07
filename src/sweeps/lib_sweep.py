@@ -55,10 +55,9 @@ class HPhiSweeps:
         self.JobTitle = f"jobrun_{run}"
         print(self.JobTitle)
 
-        # [self.NNodes, self.NOMP, self.NMPI, self.NCoresPerNode, self.Time] = hpc_settings
-
         self.WhatComputer = what_computer
         [self.HPhiBuild, self.RunPreamble,     self.Postamble, self.NNodes,
+              self.HyperthreadQ,
               self.NOMP,        self.NMPI, self.NCoresPerNode,   self.Time] = \
                 ComputerPresets(hpc_settings).computers[self.WhatComputer]
 
@@ -147,7 +146,7 @@ class HPhiSweeps:
         append_cli_str = ' '.join([f'{hd:.12f}' for hd in hdirection])
         f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' + append_cli_str + '\n\n')
 
-        f.write(f'export OMP_NUM_THREADS={self.NOMP}\n')
+        f.write(f'export OMP_NUM_THREADS={self.NMPI*self.NOMP}\n')
         f.write('HPhiSC -e namelist.def\n')
         f.write(f'export OMP_NUM_THREADS=1\n\n')
 
@@ -168,11 +167,14 @@ class HPhiSweeps:
         f.close()
 
     def create_genesis_script(self):
+        if self.HyperthreadQ == True:
+            n_threadspercore = 2
+        else:
+            n_threadspercore = 1
         f = open(f'{self.JobTitle}.sh','w+')
         f.write('#!/bin/bash\n\n')
-
         f.write(f'#SBATCH --nodes={self.NNodes}'+'\n')
-        f.write(f'#SBATCH --ntasks-per-node={int(self.NCoresPerNode/self.NOMP)}'+'\n')
+        f.write(f'#SBATCH --ntasks-per-node={int(n_threadspercore*self.NCoresPerNode/self.NOMP)}'+'\n')
         f.write(f'#SBATCH --cpus-per-task={self.NOMP}'+'\n')
         f.write(f'#SBATCH --time={self.Time}\n')
         f.write(f'#SBATCH --job-name={self.JobTitle}\n\n')
