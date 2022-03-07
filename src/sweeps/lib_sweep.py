@@ -18,7 +18,7 @@ class ComputerInfo:
     def create_ambles(self):
         preamble = ''
         if self.mpiQ:
-            preamble += f'mpiexec -np {self.hpc_settings[2]}'
+            preamble += f'mpiexec -np {self.hpc_settings[3]}'
         else:
             preamble +=  ''
 
