@@ -8,11 +8,12 @@ from math import cos, sin
 run = 1
 what_computer = 'niagara'  #can be either 'laptop', 'home', or 'niagara'
 
-Ncorespernode = 4
+Ncorespernode = 40
 hyperthreadQ = False
-Nmpi          = pow(2,1)               #MUST BE a power of 2 for S=1/2
+f = 1   #equivalent to number of points to be done at once 
+Nmpi          = pow(2,0)               #MUST BE a power of 2 for S=1/2
 if (Ncorespernode % Nmpi == 0):
-    Nomp      = int(Ncorespernode/Nmpi/2) #SHOULD BE AN INTEGER
+    Nomp      = int(Ncorespernode/Nmpi/f) #SHOULD BE AN INTEGER
 else:
     print("Check the cores! N_corespernode/N_mpi/N_omp should be an integer.")
     raise SystemExit
@@ -47,10 +48,10 @@ elif ham_model == 'eps':
     params_label_list = [eps_label]
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
-    j_val_list, j_label = [1.000, 1.000, 1.000], "j"
-    k_val_list, k_label = [0.000, 0.000, 1.000], "k"
+    j_val_list, j_label = [0.000, 0.000, 1.000], "j"
+    k_val_list, k_label = [1.000, 1.000, 1.000], "k"
     g_val_list, g_label = [0.000, 0.000, 1.000], "g"
-    gp_val_list, gp _label = [0.000, 0.000, 1.000], "gp"
+    gp_val_list, gp_label = [0.000, 0.000, 1.000], "gp"
     params_list = [j_val_list, k_val_list, g_val_list, gp_val_list]
     params_label_list = [j_label, k_label, g_label, gp_label]
 
