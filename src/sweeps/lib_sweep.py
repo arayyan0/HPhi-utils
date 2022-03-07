@@ -184,7 +184,7 @@ class HPhiSweeps:
         f.write('module load intel/2019u4 intelmpi/2019u4 scalapack\n') #for HPhi
         f.write('module load gnu-parallel\n\n')      #for the following
         f.write( f'parallel --delay 0.5 ' +\
-            f'-j {int(self.NCoresPerNode/self.NOMP/self.NMPI)} '+\
+            f'-j {int(n_threadspercore*self.NCoresPerNode/self.NOMP/self.NMPI)} '+\
             f'--joblog {self.OutputPath}/{self.JobTitle}.out '  +\
             self.Postamble  +\
             f'< {self.JobTitle}.lst\n')

@@ -24,13 +24,13 @@ hpc_settings = [Nnodes, hyperthreadQ, Nomp, Nmpi, Ncorespernode, time]
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
 method         = 'CG'
-sites          = 6
+sites          = 24
 shape          = 'RH120'
 restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart'
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
 exct           = 1         #number of states to converge
 output_mode    = 'none'    #select 'none', 'correlation', 'full'
-ham_model      = 'eps'          #gen_jtau, eps, jkggp
+ham_model      = 'jkggp'          #gen_jtau, eps, jkggp
 
 stan_cli_list = [method, sites, shape, restart, lanczos_max,
                    exct, output_mode, ham_model]
@@ -47,7 +47,12 @@ elif ham_model == 'eps':
     params_label_list = [eps_label]
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
-    pass
+    j_val_list, j_label = [1.000, 1.000, 1.000], "j"
+    k_val_list, k_label = [0.000, 0.000, 1.000], "k"
+    g_val_list, g_label = [0.000, 0.000, 1.000], "g"
+    gp_val_list, gp _label = [0.000, 0.000, 1.000], "gp"
+    params_list = [j_val_list, k_val_list, g_val_list, gp_val_list]
+    params_label_list = [j_label, k_label, g_label, gp_label]
 
 #----magnetic field magnitude
 h_val_list,  h_label = [0.000, 0.000, 0.20], "h"
