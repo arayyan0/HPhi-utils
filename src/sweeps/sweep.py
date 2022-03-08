@@ -1,4 +1,4 @@
-from lib_sweep import HPhiSweeps
+from lib_sweep import HPhiSweeps, ComputerPresets, SLURMHelper
 import os
 import numpy as np
 from math import cos, sin
@@ -6,21 +6,20 @@ from math import cos, sin
 #---------------------logistical details
 #---------------------------------------
 run = 1
-what_computer = 'niagara'  #can be either 'laptop', 'home', or 'niagara'
 
-Ncorespernode = 40
-hyperthreadQ = False
-f = 1   #equivalent to number of points to be done at once 
-Nmpi          = pow(2,0)               #MUST BE a power of 2 for S=1/2
-if (Ncorespernode % Nmpi == 0):
-    Nomp      = int(Ncorespernode/Nmpi/f) #SHOULD BE AN INTEGER
-else:
-    print("Check the cores! N_corespernode/N_mpi/N_omp should be an integer.")
-    raise SystemExit
+what_computer = 'laptop'  #can be either 'laptop', 'home', or 'niagara'
+computer_settings = ComputerPresets().computers[what_computer]
 
 Nnodes        = 1
+hyperthreadQ  = False
+Nmpi          = pow(2,0)               #MUST BE a power of 2 for S=1/2
+Nomp          = 4
 time          = '00:15:00'
-hpc_settings = [Nnodes, hyperthreadQ, Nomp, Nmpi, Ncorespernode, time]
+slurm_helper  = SLURMHelper(computer_settings, Nnodes, hyperthreadQ, Nmpi, Nomp, time)
+
+slurm_helper.calculate_relevant_integers()
+slurm_helper.create_local_sim_commands()
+slurm_helper.create_submit_script_texts()
 #-----------------------------------------------------------
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
@@ -48,7 +47,7 @@ elif ham_model == 'eps':
     params_label_list = [eps_label]
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
-    j_val_list, j_label = [0.000, 0.000, 1.000], "j"
+    j_val_list, j_label = [-1.000, 1.000, 1.000], "j"
     k_val_list, k_label = [1.000, 1.000, 1.000], "k"
     g_val_list, g_label = [0.000, 0.000, 1.000], "g"
     gp_val_list, gp_label = [0.000, 0.000, 1.000], "gp"
@@ -77,8 +76,7 @@ hdir_norm = hdirection/np.linalg.norm(hdirection)
 #---------------------create instance create file, and output.
 #-------------------------------------------------------------
 cwd = os.getcwd()
-sweep = HPhiSweeps(run, what_computer,
-                   hpc_settings,
+sweep = HPhiSweeps(run, slurm_helper,
                    stan_cli_list,
                    params_list, params_label_list, hdir_norm,
                    cwd)
