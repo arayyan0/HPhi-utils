@@ -54,14 +54,15 @@ class SLURMHelper:
         #     raise SystemExit
 
     def create_local_sim_commands(self):
-        self.preamble = f'mpiexec -np {self.Ntasksperpoint}' if self.computer_settings.mpiQ else ''
+        self.preamble = f'mpiexec -np {self.Ntasksperpoint}' \
+                        if self.computer_settings.mpiQ else ''
         self.postamble = '--wd $PWD ' if self.Nnodes > 1 else ''
 
     def create_submit_script_texts(self):
-        slurm_settings = ''
-        slurm_settings += f'#SBATCH --nodes={self.Nnodes}'+'\n'
-        slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}'+'\n'
-        slurm_settings += f'#SBATCH --cpus-per-task={self.Ncpuspertask}'+'\n'
+        slurm_settings =  ''
+        slurm_settings += f'#SBATCH --nodes={self.Nnodes}\n'
+        slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}\n'
+        slurm_settings += f'#SBATCH --cpus-per-task={self.Ncpuspertask}\n'
         slurm_settings += f'#SBATCH --time={self.time}\n'
         self.slurm_settings = slurm_settings
         self.parallel_command = f'parallel --delay 0.5 -j {int(self.Nj)} '
@@ -113,7 +114,8 @@ class HPhiSweeps:
         self.Folders = []
         self.NPoints = len(product)
         for prod in product:
-            param_label_list = ''.join(map(str, [f'{self.Labels[i]}_{prod[i]:.12f}_' for i in range(len(self.Params))]))
+            param_label_list = ''.join(map(str, [f'{self.Labels[i]}_{prod[i]:.12f}_'\
+                                for i in range(len(self.Params))]))
             folder_name = self.OutputPath+'/'+param_label_list+'/'
             if not os.path.exists(folder_name):
                 os.makedirs(folder_name)
@@ -136,7 +138,8 @@ class HPhiSweeps:
         # preamble of bash scripts
         f = open(filename, 'w')
         #change permissions to execute by user, group, others
-        permissions = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH | stat.S_IXGRP | stat.S_IXOTH
+        permissions = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH | stat.S_IXGRP \
+                    | stat.S_IXOTH
         os.chmod(filename, permissions)
         f.write('#!/bin/bash\n\n')
 
@@ -153,14 +156,16 @@ class HPhiSweeps:
         stan_cli_str = ' '.join(list(map(str, stan_cli_list)))
 
         param_str = ' '.join([f'{p:.12f}' for p in prod[:-1]])
-        f.write(f'python3 '+ self.PWD+'/src/sweeps/prepare_standard_cli.py ' + stan_cli_str + ' ' + param_str + '\n\n')
+        f.write(f'python3 '+ self.PWD+'/src/sweeps/prepare_standard_cli.py ' \
+                + stan_cli_str + ' ' + param_str + '\n\n')
 
         stan_str = '/'.join(filename.split('/')[:-1])+'/stan.in\n'
 
         f.write(f'HPhiDRY stan.in\n\n')
 
         append_cli_str = ' '.join([f'{hd:.12f}' for hd in hdirection])
-        f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' + append_cli_str + '\n\n')
+        f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' \
+                + append_cli_str + '\n\n')
 
         f.write(f'export OMP_NUM_THREADS={self.NThreads}\n')
         f.write('HPhiSC -e namelist.def\n')
