@@ -2,10 +2,11 @@ from lib_sweep import HPhiSweeps, ComputerPresets, SLURMHelper
 import os
 import numpy as np
 from math import cos, sin
+import sys
 #---------------------------------------
 #---------------------logistical details
 #---------------------------------------
-run = 1
+run = int(sys.argv[1])
 
 what_computer = 'laptop'  #can be either 'laptop', 'home', or 'niagara'
 computer_settings = ComputerPresets().computers[what_computer]
@@ -37,12 +38,16 @@ stan_cli_list = [method, sites, shape, restart, lanczos_max,
 #-------------------------------------------------------
 #---------------------parameter entry: min, max, spacing
 #-------------------------------------------------------
+pmin=0
+pmax=1
+dp = (pmax-pmin)/run
+pmax -= dp
 if ham_model == 'jtaujbjqjo':
     # model 1: general jtau, jb, jq, jo
-    jtau_val_list, jtau_label = [-1.000, 1.000, 1.000], "jtau"
-    jb_val_list, jb_label     = [ 1.000, 1.000, 1.000], "jb"
+    jtau_val_list, jtau_label = [  pmin,  pmax,    dp], "jtau"
+    jb_val_list, jb_label     = [ 0.000, 0.000, 1.000], "jb"
     jq_val_list, jq_label     = [ 0.000, 0.000, 1.000], "jq"
-    jo_val_list, jo_label     = [ 0.000, 0.000, 1.000], "jo"
+    jo_val_list, jo_label     = [ 1.000, 1.000, 1.000], "jo"
     params_list = [jtau_val_list, jb_val_list, jq_val_list, jo_val_list]
     params_label_list = [jtau_label, jb_label, jq_label, jo_label]
 
