@@ -30,27 +30,34 @@ restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
 exct           = 1         #number of states to converge
 output_mode    = 'none'    #select 'none', 'correlation', 'full'
-ham_model      = 'jkggp'          #gen_jtau, eps, jkggp
+ham_model      = 'jtaujbjqjo'          #gen_jtau, eps, jkggp
 
 stan_cli_list = [method, sites, shape, restart, lanczos_max,
                    exct, output_mode, ham_model]
 #-------------------------------------------------------
 #---------------------parameter entry: min, max, spacing
 #-------------------------------------------------------
-if ham_model == 'gen_jtau':
+if ham_model == 'jtaujbjqjo':
     # model 1: general jtau, jb, jq, jo
-    pass
+    jtau_val_list, jtau_label = [-1.000, 1.000, 1.000], "jtau"
+    jb_val_list, jb_label     = [ 1.000, 1.000, 1.000], "jb"
+    jq_val_list, jq_label     = [ 0.000, 0.000, 1.000], "jq"
+    jo_val_list, jo_label     = [ 0.000, 0.000, 1.000], "jo"
+    params_list = [jtau_val_list, jb_val_list, jq_val_list, jo_val_list]
+    params_label_list = [jtau_label, jb_label, jq_label, jo_label]
+
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
     eps_val_list, eps_label = [0.000, 0.000, 0.000], "eps"
     params_list = [eps_val_list]
     params_label_list = [eps_label]
+
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
-    j_val_list, j_label = [-1.000, 1.000, 1.000], "j"
-    k_val_list, k_label = [1.000, 1.000, 1.000], "k"
-    g_val_list, g_label = [0.000, 0.000, 1.000], "g"
-    gp_val_list, gp_label = [0.000, 0.000, 1.000], "gp"
+    j_val_list, j_label   = [-1.000, 1.000, 1.000], "j"
+    k_val_list, k_label   = [ 1.000, 1.000, 1.000], "k"
+    g_val_list, g_label   = [ 0.000, 0.000, 1.000], "g"
+    gp_val_list, gp_label = [ 0.000, 0.000, 1.000], "gp"
     params_list = [j_val_list, k_val_list, g_val_list, gp_val_list]
     params_label_list = [j_label, k_label, g_label, gp_label]
 
