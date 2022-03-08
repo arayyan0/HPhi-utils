@@ -28,11 +28,10 @@ ham_model = sys.argv[8] #'gen_jtau', 'eps', 'jkggp'
 params = sys.argv[9:]
 params_float = list(map(float, params))
 
-if ham_model == 'gen_jtau':
+if ham_model == 'jtaujbjqjo':
     #model 1: general jtau, jb, jq, jo
-    [theta, phi, jb] = params_float
-    jt, jb, jq, jo = parameterize_multipole_by_angles(theta, phi, jb)
-    H0, H1, H2     = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
+    [jt, jb, jq, jo] = params_float
+    H0, H1, H2       = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
     [eps]             = params_float

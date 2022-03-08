@@ -59,7 +59,7 @@ class SLURMHelper:
 
     def create_submit_script_texts(self):
         slurm_settings = ''
-        slurm_settings += f'#SBATCH --nodes={self.Nnodes}'+'\n'
+        slurm_settings += f'#SBATCH --nodes={int(self.Nnodes)}'+'\n'
         slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}'+'\n'
         slurm_settings += f'#SBATCH --cpus-per-task={int(self.Ncpuspertask)}'+'\n'
         slurm_settings += f'#SBATCH --time={self.time}\n'
@@ -80,7 +80,7 @@ class HPhiSweeps:
 
         self.HPhiBuild = slurm_helper.computer_settings.hphi_build_loc
         self.Preamble = slurm_helper.preamble
-        self.NThreads = int(slurm_helper.Ntasksperpoint*slurm_helper.Ncpuspertask)
+        self.NThreads = slurm_helper.Ntasksperpoint*slurm_helper.Ncpuspertask
 
         self.Labels = params_label_list
         self.Params = []
@@ -166,7 +166,7 @@ class HPhiSweeps:
         f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' \
                 + append_cli_str + '\n\n')
 
-        f.write(f'export OMP_NUM_THREADS={self.NThreads}\n')
+        f.write(f'export OMP_NUM_THREADS={int(self.NThreads)}\n')
         f.write('HPhiSC -e namelist.def\n')
         f.write(f'export OMP_NUM_THREADS=1\n\n')
 
