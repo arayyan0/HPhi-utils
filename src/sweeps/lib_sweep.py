@@ -54,15 +54,14 @@ class SLURMHelper:
         #     raise SystemExit
 
     def create_local_sim_commands(self):
-        self.preamble = f'mpiexec -np {self.Ntasksperpoint}' \
-                        if self.computer_settings.mpiQ else ''
+        self.preamble = f'mpiexec -np {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
         self.postamble = '--wd $PWD ' if self.Nnodes > 1 else ''
 
     def create_submit_script_texts(self):
-        slurm_settings =  ''
-        slurm_settings += f'#SBATCH --nodes={self.Nnodes}\n'
-        slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}\n'
-        slurm_settings += f'#SBATCH --cpus-per-task={self.Ncpuspertask}\n'
+        slurm_settings = ''
+        slurm_settings += f'#SBATCH --nodes={self.Nnodes}'+'\n'
+        slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}'+'\n'
+        slurm_settings += f'#SBATCH --cpus-per-task={int(self.Ncpuspertask)}'+'\n'
         slurm_settings += f'#SBATCH --time={self.time}\n'
         self.slurm_settings = slurm_settings
         self.parallel_command = f'parallel --delay 0.5 -j {int(self.Nj)} '
@@ -81,7 +80,7 @@ class HPhiSweeps:
 
         self.HPhiBuild = slurm_helper.computer_settings.hphi_build_loc
         self.Preamble = slurm_helper.preamble
-        self.NThreads = slurm_helper.Ntasksperpoint*slurm_helper.Ncpuspertask
+        self.NThreads = int(slurm_helper.Ntasksperpoint*slurm_helper.Ncpuspertask)
 
         self.Labels = params_label_list
         self.Params = []
