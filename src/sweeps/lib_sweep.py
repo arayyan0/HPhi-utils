@@ -37,17 +37,21 @@ class SLURMHelper:
         Nthreadspercore = 2 if self.hyperthreadQ else 1
         #implement later: ensure these two are integers.
         Nthreadspernode = Nthreadspercore*self.computer_settings.Ncorespernode
-        if (Nthreadspernode % self.Ncpuspertask == 0):
-            self.Ntaskspernode = Nthreadspernode/self.Ncpuspertask
-        else:
-            print('Your tasks per node is not an integer. Bye!')
-            raise SystemExit
 
-        if (self.Ntaskspernode % self.Ntasksperpoint == 0):
-            self.Nj            = self.Ntaskspernode/self.Ntasksperpoint
-        else:
-            print('Your points per node is not an integer. Bye!')
-            raise SystemExit
+        self.Ntaskspernode = 1
+        self.Nj = 1
+
+        # if (Nthreadspernode % self.Ncpuspertask == 0):
+        #     self.Ntaskspernode = Nthreadspernode/self.Ncpuspertask
+        # else:
+        #     print('Your tasks per node is not an integer. Bye!')
+        #     raise SystemExit
+        #
+        # if (self.Ntaskspernode % self.Ntasksperpoint == 0):
+        #     self.Nj            = self.Ntaskspernode/self.Ntasksperpoint
+        # else:
+        #     print('Your points per node is not an integer. Bye!')
+        #     raise SystemExit
 
     def create_local_sim_commands(self):
         self.preamble = f'mpiexec -np {self.Ntasksperpoint}' if self.computer_settings.mpiQ else ''

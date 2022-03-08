@@ -42,7 +42,7 @@ if ham_model == 'gen_jtau':
     pass
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    eps_val_list, eps_label = [-1.000, 0.000, 1.000], "eps"
+    eps_val_list, eps_label = [0.000, 0.000, 0.000], "eps"
     params_list = [eps_val_list]
     params_label_list = [eps_label]
 elif ham_model == 'jkggp':
