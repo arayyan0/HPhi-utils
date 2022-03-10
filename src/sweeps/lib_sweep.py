@@ -54,7 +54,8 @@ class SLURMHelper:
         #    raise SystemExit
 
     def create_local_sim_commands(self):
-        self.preamble = f'mpiexec -np {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
+        # self.preamble = f'mpiexec -np {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
+		self.preamble = f'srun {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
         self.postamble = '--wd $PWD ' if self.Nnodes > 1 else ''
 
     def create_submit_script_texts(self):
