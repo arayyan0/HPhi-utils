@@ -174,6 +174,7 @@ class EnergyDerivatives:
         ax2.grid(True, axis='x')
 
         plt.xlim(min(self.paramlist), max(self.paramlist))
+        # plt.xlim(0,1.5)
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         return fig
 
@@ -210,23 +211,25 @@ class ParameterPresets:
 
     def __init__(self):
         #j-k-g-gp
-        self.add_parameter(  'j',            'J', False)
-        self.add_parameter(  'k',            'K', False)
-        self.add_parameter(  'g',      r'\Gamma', False)
-        self.add_parameter( 'gp',     r"\Gamma'",  False)
+        self.add_parameter(   'j',         'J', False)
+        self.add_parameter(   'k',         'K', False)
+        self.add_parameter(   'g',   r'\Gamma', False)
+        self.add_parameter(  'gp',  r"\Gamma'", False)
         #multipolar_0
-        self.add_parameter( 'jtau', r'J_\{\tau}', False)
-        self.add_parameter( 'jb',         r'J_B', False)
-        self.add_parameter( 'jq',         r'J_Q', False)
-        self.add_parameter( 'jo',         r'J_O', False)
+        self.add_parameter('jtau', r'J_{\tau}', False)
+        self.add_parameter(  'jb',      r'J_B', False)
+        self.add_parameter(  'jq',      r'J_Q', False)
+        self.add_parameter(  'jo',      r'J_O', False)
         #multipolar_1
-        self.add_parameter(  't',      r'\theta',  True)
-        self.add_parameter(  'p',        r'\phi',  True)
+        self.add_parameter(   't',   r'\theta',  True)
+        self.add_parameter(   'p',     r'\phi',  True)
         #multipolar_2
-        self.add_parameter( 'xi',         r'\xi',  True)
-        self.add_parameter('eps',    r'\epsilon', False)
+        self.add_parameter(  'xi',      r'\xi',  True)
+        self.add_parameter( 'eps', r'\epsilon', False)
         #magnetic field
-        self.add_parameter(  'h',            'h', False)
+        self.add_parameter(   'h',         'h', False)
+        #g for anisotropy
+        self.add_parameter(  'ga',       'g_a', False)
 
 class OneDParameterSweep:
     def __init__(self, paramslist, energieslist, paramlabel, which_parameter_to_sort):

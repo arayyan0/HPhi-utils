@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 ################################################################################
 ################################################################################
 ################################################################################
-which = '3.02.2022_18_xi_spectrum'
-number = 1
-which_parameter_to_sort = 'xi'
+which = '3.10.2022_12_eps0_h'
+number = 2
+which_parameter_to_sort = 'h'
 ################################################################################
 ################################################################################
 ################################################################################
@@ -50,8 +50,8 @@ sweep = OneDParameterSweep(paramslist,energieslist,labels,which_parameter_to_sor
 #     plt.show()
 #     plt.close()
 
-#gs and derivs plot
-# fig = sweep.plot_gs_properties()
-# plt.savefig(create_plot_filename('gsenergy_', plot_folder, ''))
-# plt.show()
-# plt.close()
+# gs and derivs plot
+fig = sweep.plot_gs_properties()
+plt.savefig(create_plot_filename('gsenergy_', plot_folder, ''))
+plt.show()
+plt.close()
