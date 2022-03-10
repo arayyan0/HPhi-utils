@@ -6,45 +6,42 @@ import sys
 #---------------------------------------
 #---------------------logistical details
 #---------------------------------------
-run = int(sys.argv[1])
+run = 2
 
-what_computer = 'laptop'  #can be either 'laptop', 'home', or 'niagara'
+what_computer = 'niagara'  #can be either 'laptop', 'home', or 'niagara'
 computer_settings = ComputerPresets().computers[what_computer]
 
 Nnodes        = 1
-hyperthreadQ  = False
+hyperthreadQ  = True
 Nmpi          = pow(2,0)               #MUST BE a power of 2 for S=1/2
-Nomp          = 4
-time          = '00:15:00'
+Nomp          = 80
+time          = '01:30:00'
 slurm_helper  = SLURMHelper(computer_settings, Nnodes, hyperthreadQ, Nmpi, Nomp, time)
 
 slurm_helper.calculate_relevant_integers()
 slurm_helper.create_local_sim_commands()
 slurm_helper.create_submit_script_texts()
+slurm_helper.print_salloc()
 #-----------------------------------------------------------
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
 method         = 'CG'
-sites          = 24
-shape          = 'RH120'
+sites          = 12
+shape          = 'RH60'
 restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart'
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
 exct           = 1         #number of states to converge
 output_mode    = 'none'    #select 'none', 'correlation', 'full'
-ham_model      = 'jtaujbjqjo'          #gen_jtau, eps, jkggp
+ham_model      = 'eps'          #gen_jtau, eps, jkggp
 
 stan_cli_list = [method, sites, shape, restart, lanczos_max,
                    exct, output_mode, ham_model]
 #-------------------------------------------------------
 #---------------------parameter entry: min, max, spacing
 #-------------------------------------------------------
-pmin=0
-pmax=1
-dp = (pmax-pmin)/run
-pmax -= dp
 if ham_model == 'jtaujbjqjo':
     # model 1: general jtau, jb, jq, jo
-    jtau_val_list, jtau_label = [  pmin,  pmax,    dp], "jtau"
+    jtau_val_list, jtau_label = [ 0.025, 1.000, 0.025], "jtau"
     jb_val_list, jb_label     = [ 0.000, 0.000, 1.000], "jb"
     jq_val_list, jq_label     = [ 0.000, 0.000, 1.000], "jq"
     jo_val_list, jo_label     = [ 1.000, 1.000, 1.000], "jo"
@@ -53,13 +50,13 @@ if ham_model == 'jtaujbjqjo':
 
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    eps_val_list, eps_label = [0.000, 0.000, 0.000], "eps"
+    eps_val_list, eps_label = [0.000, 0.000, 0.100], "eps"
     params_list = [eps_val_list]
     params_label_list = [eps_label]
 
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
-    j_val_list, j_label   = [-1.000, 1.000, 1.000], "j"
+    j_val_list, j_label   = [ 0.000, 0.000, 1.000], "j"
     k_val_list, k_label   = [ 1.000, 1.000, 1.000], "k"
     g_val_list, g_label   = [ 0.000, 0.000, 1.000], "g"
     gp_val_list, gp_label = [ 0.000, 0.000, 1.000], "gp"
@@ -67,10 +64,16 @@ elif ham_model == 'jkggp':
     params_label_list = [j_label, k_label, g_label, gp_label]
 
 #----magnetic field magnitude
-h_val_list,  h_label = [0.000, 0.000, 0.20], "h"
+h_val_list,  h_label = [1.000, 1.245, 0.005], "h"
 
 params_list += [h_val_list]
 params_label_list += [h_label]
+
+#----z-bond anisotropy
+ga_val_list, ga_label = [0.05, 0.05, 0.01], "ga"
+
+params_list += [ga_val_list]
+params_label_list += [ga_label]
 
 #----magnetic field direction
 #angles in degrees

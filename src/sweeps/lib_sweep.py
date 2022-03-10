@@ -41,17 +41,17 @@ class SLURMHelper:
         self.Ntaskspernode = 1
         self.Nj = 1
 
-        # if (Nthreadspernode % self.Ncpuspertask == 0):
-        #     self.Ntaskspernode = Nthreadspernode/self.Ncpuspertask
-        # else:
-        #     print('Your tasks per node is not an integer. Bye!')
-        #     raise SystemExit
+        #if (Nthreadspernode % self.Ncpuspertask == 0):
+        #    self.Ntaskspernode = Nthreadspernode/self.Ncpuspertask
+        #else:
+        #    print('Your tasks per node is not an integer. Bye!')
+        #    raise SystemExit
         #
-        # if (self.Ntaskspernode % self.Ntasksperpoint == 0):
-        #     self.Nj            = self.Ntaskspernode/self.Ntasksperpoint
-        # else:
-        #     print('Your points per node is not an integer. Bye!')
-        #     raise SystemExit
+        #if (self.Ntaskspernode % self.Ntasksperpoint == 0):
+        #    self.Nj            = self.Ntaskspernode/self.Ntasksperpoint
+        #else:
+        #    print('Your points per node is not an integer. Bye!')
+        #    raise SystemExit
 
     def create_local_sim_commands(self):
         self.preamble = f'mpiexec -np {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
@@ -65,6 +65,9 @@ class SLURMHelper:
         slurm_settings += f'#SBATCH --time={self.time}\n'
         self.slurm_settings = slurm_settings
         self.parallel_command = f'parallel --delay 0.5 -j {int(self.Nj)} '
+
+    def print_salloc(self):
+        print(f'salloc --nodes={int(self.Nnodes)} --ntasks-per-node={int(self.Ntaskspernode)} --cpus-per-task={int(self.Ncpuspertask)} --time={self.time}')
 
 class HPhiSweeps:
     def __init__(self, run, slurm_helper,
@@ -84,7 +87,7 @@ class HPhiSweeps:
 
         self.Labels = params_label_list
         self.Params = []
-        self.create_parameters_arrays(params_list)
+        self.create_parameters_arrays(params_list, run)
 
         for i in range(len(self.Labels)):
             print(f"{self.Labels[i]}:\n{self.Params[i]}")
@@ -93,9 +96,13 @@ class HPhiSweeps:
         self.create_genesis_script(slurm_helper)
         self.create_command_list()
 
-    def create_parameters_arrays(self, params_list):
+    def create_parameters_arrays(self, params_list, run):
         for params in params_list:
             x_min, x_max, dx = params
+            #if abs(x_max - x_min) < pow(10,-8) and abs(x_max) < pow(10,-8):
+            #    self.Params.append(np.array([x_min]))
+            #elif abs(x_max - x_min) < pow(10,-8) and abs(x_max) > pow(10,-8):
+            #    self.Params.append(np.array([x_min]*run))
             if abs(x_max - x_min) < pow(10,-8):
                 self.Params.append(np.array([x_min]))
             else:
@@ -112,10 +119,11 @@ class HPhiSweeps:
 
         self.Folders = []
         self.NPoints = len(product)
-        for prod in product:
+        for j, prod in enumerate(product):
             param_label_list = ''.join(map(str, [f'{self.Labels[i]}_{prod[i]:.12f}_'\
                                 for i in range(len(self.Params))]))
             folder_name = self.OutputPath+'/'+param_label_list+'/'
+	    #folder_name = self.OutputPath+'/'+param_label_list+f'v_{j}'+'/'
             if not os.path.exists(folder_name):
                 os.makedirs(folder_name)
             self.Folders.append(folder_name)
