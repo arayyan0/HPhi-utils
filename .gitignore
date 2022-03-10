@@ -6,6 +6,8 @@ jobrun_*
 out*/
 clusters/
 archive/
+slurm*
+
 # Mac
 .DS_Store
 *pycache*
