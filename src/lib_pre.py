@@ -53,7 +53,9 @@ def parameterize_multipole_by_angles(theta, phi, jb):
 def parameterize_multipole_by_epsilon(eps):
     return [1, (1+eps)/np.sqrt(2), 0, (1-eps)/2]
 
+@dataclass
 class TwoBodyHamiltonian:
+    ga: float
     def make_kitaev_hamiltonian(self, j, k, g, gp):
         __, xy, xz, yz = self.some_helpful_matrices()
         Hz = j*np.eye(3) + k*np.diag([0,0,1]) + g*xy + gp*(xz+yz)
@@ -64,16 +66,17 @@ class TwoBodyHamiltonian:
                     ])
         Hx = w.T @ Hz @ w
         Hy = w.T @ Hx @ w
-        return [Hz, Hx, Hy]
+        return [(1+self.ga)*Hz, Hx, Hy]#z,x,y hamiltonian
 
     def make_multipole_hamiltonian(self, jt, jb, jq, jo):
         xxzz, xy, xz, yz = self.some_helpful_matrices()
         H_indep = np.diag([jq+jt/2, jo, jq+jt/2])
-        hams = []
-        for angle in [n*2*pi/3 for n in [0, 1, 2]]:
+        hams = [] #z,x,y hamiltonian
+        anisotropy = [self.ga, 0, 0]
+        for ga, angle in zip(anisotropy, [n*2*pi/3 for n in [0, 1, 2]]):
             s, c = sin(angle), cos(angle)
             H_dep = (jt/2)*(c*xxzz-s*xz) + jb*(s*xy + c*yz)
-            hams.append(H_indep + H_dep)
+            hams.append((1+ga)*(H_indep + H_dep))
         return hams
 
     def some_helpful_matrices(self):

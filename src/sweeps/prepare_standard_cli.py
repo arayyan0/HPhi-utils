@@ -30,17 +30,17 @@ params_float = list(map(float, params))
 
 if ham_model == 'jtaujbjqjo':
     #model 1: general jtau, jb, jq, jo
-    [jt, jb, jq, jo] = params_float
-    H0, H1, H2       = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
+    [jt, jb, jq, jo, ga] = params_float
+    H0, H1, H2       = TwoBodyHamiltonian(ga).make_multipole_hamiltonian(jt, jb, jq, jo)
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    [eps]             = params_float
+    [eps, ga]             = params_float
     jt, jb, jq, jo = parameterize_multipole_by_epsilon(eps)
-    H0, H1, H2     = TwoBodyHamiltonian().make_multipole_hamiltonian(jt, jb, jq, jo)
+    H0, H1, H2     = TwoBodyHamiltonian(ga).make_multipole_hamiltonian(jt, jb, jq, jo)
 elif ham_model == 'jkggp':
     #model 3: j-k-g-gp model
-    [j, k, g, gp]    = params_float
-    H0, H1, H2     = TwoBodyHamiltonian().make_kitaev_hamiltonian(j, k, g, gp)
+    [j, k, g, gp, ga]    = params_float
+    H0, H1, H2     = TwoBodyHamiltonian(ga).make_kitaev_hamiltonian(j, k, g, gp)
 #--------------------create instance create file, and output.
 simulation     = StandardInput(model, method, lattice,
                                a0, a1,
