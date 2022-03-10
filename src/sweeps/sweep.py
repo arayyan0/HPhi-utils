@@ -64,10 +64,16 @@ elif ham_model == 'jkggp':
     params_label_list = [j_label, k_label, g_label, gp_label]
 
 #----magnetic field magnitude
-h_val_list,  h_label = [0.5, 0.995, 0.005], "h"
+h_val_list,  h_label = [1.000, 1.245, 0.005], "h"
 
 params_list += [h_val_list]
 params_label_list += [h_label]
+
+#----z-bond anisotropy
+ga_val_list, ga_label = [0.05, 0.05, 0.01], "ga"
+
+params_list += [ga_val_list]
+params_label_list += [ga_label]
 
 #----magnetic field direction
 #angles in degrees
