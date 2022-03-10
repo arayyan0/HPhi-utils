@@ -7,6 +7,7 @@ import sys
 
 @dataclass
 class ComputerInfo:
+    label:          str
     hphi_build_loc: str
     mpiQ          : bool
     Ncorespernode : int
@@ -14,15 +15,16 @@ class ComputerInfo:
 class ComputerPresets:
     computers = { }
     def add_computer(self, label, hphi_build_loc, mpiQ, Ncorespernode):
-        self.computers[label] = ComputerInfo(hphi_build_loc, mpiQ,
+        self.computers[label] = ComputerInfo(label, hphi_build_loc, mpiQ,
                                              Ncorespernode)
 
     def __init__(self):
         hphi_laptop  = '/Users/ahmed/Documents/University/PhD/Research/General/HPhi/HPhi.build/'
-        hphi_niagara = '/gpfs/fs0/scratch/h/hykee/arayyan/HPhi.build/'
+        hphi_niagara = 'scratch/h/hykee/arayyan/HPhi.build/'
 
-        self.add_computer( 'laptop',  hphi_laptop, False,  4)
-        self.add_computer('niagara', hphi_niagara,  True, 40)
+        self.add_computer(      'laptop',               hphi_laptop, False,  4)
+        self.add_computer('niagara_gpfs', '/gpfs/fs0/'+hphi_niagara,  True, 40)
+        self.add_computer(     'niagara',              hphi_niagara,  True, 40)
 
 @dataclass
 class SLURMHelper:
@@ -38,37 +40,41 @@ class SLURMHelper:
         #implement later: ensure these two are integers.
         Nthreadspernode = Nthreadspercore*self.computer_settings.Ncorespernode
 
-        self.Ntaskspernode = 1
-        self.Nj = 1
-
-        #if (Nthreadspernode % self.Ncpuspertask == 0):
-        #    self.Ntaskspernode = Nthreadspernode/self.Ncpuspertask
-        #else:
-        #    print('Your tasks per node is not an integer. Bye!')
-        #    raise SystemExit
-        #
-        #if (self.Ntaskspernode % self.Ntasksperpoint == 0):
-        #    self.Nj            = self.Ntaskspernode/self.Ntasksperpoint
-        #else:
-        #    print('Your points per node is not an integer. Bye!')
-        #    raise SystemExit
-
+        if (Nthreadspernode % self.Ncpuspertask == 0):
+           self.Ntaskspernode = Nthreadspernode/self.Ncpuspertask
+        else:
+           print('Your tasks per node is not an integer. Bye!')
+           raise SystemExit
+    #
     def create_local_sim_commands(self):
-        # self.preamble = f'mpiexec -np {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
-		self.preamble = f'srun {int(self.Ntasksperpoint)}' if self.computer_settings.mpiQ else ''
-        self.postamble = '--wd $PWD ' if self.Nnodes > 1 else ''
+        self.hphi_command = f'srun' if self.computer_settings.mpiQ else ''
 
     def create_submit_script_texts(self):
         slurm_settings = ''
-        slurm_settings += f'#SBATCH --nodes={int(self.Nnodes)}'+'\n'
-        slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}'+'\n'
-        slurm_settings += f'#SBATCH --cpus-per-task={int(self.Ncpuspertask)}'+'\n'
+        slurm_settings += f'#SBATCH --nodes={int(self.Nnodes)}\n'
+        slurm_settings += f'#SBATCH --ntasks-per-node={int(self.Ntaskspernode)}\n'
+        slurm_settings += f'#SBATCH --cpus-per-task={int(self.Ncpuspertask)}\n'
         slurm_settings += f'#SBATCH --time={self.time}\n'
         self.slurm_settings = slurm_settings
-        self.parallel_command = f'parallel --delay 0.5 -j {int(self.Nj)} '
 
-    def print_salloc(self):
-        print(f'salloc --nodes={int(self.Nnodes)} --ntasks-per-node={int(self.Ntaskspernode)} --cpus-per-task={int(self.Ncpuspertask)} --time={self.time}')
+        self.submit_dir = f'cd $SLURM_SUBMIT_DIR\n\n' if self.computer_settings.label \
+                          == 'niagara_gpfs' else ''
+
+        self.create_node_list_file = 'scontrol show hostname > ./node_list_${SLURM_JOB_ID}\n'\
+                                     if self.Nnodes > 1 else ''
+
+        parallel_command  = ''
+        parallel_command += 'parallel --delay 0.1 '
+        parallel_command += '--jobs $SLURM_NTASKS_PER_NODE ' if self.Ntasksperpoint > 1 else ''
+        parallel_command += '--sshloginfile ./node_list_${SLURM_JOB_ID} --workdir $PWD ' \
+                            if self.Nnodes > 1 else ''
+        parallel_command += '--env OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK '
+        self.parallel_command = parallel_command
+
+        self.salloc_command = f'salloc --nodes={int(self.Nnodes)} '+\
+                                 f'--ntasks-per-node={int(self.Ntaskspernode)} '+\
+                                 f'--cpus-per-task={int(self.Ncpuspertask)} '+\
+                                 f'--time={self.time}'
 
 class HPhiSweeps:
     def __init__(self, run, slurm_helper,
@@ -76,15 +82,13 @@ class HPhiSweeps:
                        params_list, params_label_list, hdirection,
                        cwd):
 
-        self.PWD = cwd
-        print(self.PWD)
+        self.ProjectDirectory = cwd
+        print(self.ProjectDirectory)
 
         self.JobTitle = f"jobrun_{run}"
         print(self.JobTitle)
 
-        self.HPhiBuild = slurm_helper.computer_settings.hphi_build_loc
-        self.Preamble = slurm_helper.preamble
-        self.NThreads = slurm_helper.Ntasksperpoint*slurm_helper.Ncpuspertask
+        self.SlurmHelper = slurm_helper
 
         self.Labels = params_label_list
         self.Params = []
@@ -94,7 +98,7 @@ class HPhiSweeps:
             print(f"{self.Labels[i]}:\n{self.Params[i]}")
 
         self.create_directory_structure(stan_cli_list, hdirection)
-        self.create_genesis_script(slurm_helper)
+        self.create_genesis_script()
         self.create_command_list()
 
     def create_parameters_arrays(self, params_list, run):
@@ -124,7 +128,7 @@ class HPhiSweeps:
             param_label_list = ''.join(map(str, [f'{self.Labels[i]}_{prod[i]:.12f}_'\
                                 for i in range(len(self.Params))]))
             folder_name = self.OutputPath+'/'+param_label_list+'/'
-	    #folder_name = self.OutputPath+'/'+param_label_list+f'v_{j}'+'/'
+        #folder_name = self.OutputPath+'/'+param_label_list+f'v_{j}'+'/'
             if not os.path.exists(folder_name):
                 os.makedirs(folder_name)
             self.Folders.append(folder_name)
@@ -143,7 +147,7 @@ class HPhiSweeps:
         6) create gp_script.gp
         '''
 
-        # preamble of bash scripts
+        # hphi_command of bash scripts
         f = open(filename, 'w')
         #change permissions to execute by user, group, others
         permissions = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH | stat.S_IXGRP \
@@ -153,18 +157,20 @@ class HPhiSweeps:
 
         # writing function shortcut for HPhi
         f.write('HPhiSC () {\n')
-        f.write(f'  command {self.Preamble} {self.HPhiBuild}src/HPhi $1 $2\n')
+        f.write(f'  command {self.SlurmHelper.hphi_command}'+
+                f' {self.SlurmHelper.computer_settings.hphi_build_loc}src/HPhi $1 $2\n')
         f.write('}\n\n')
 
         f.write('HPhiDRY () {\n')
-        f.write(f'  command {self.HPhiBuild}src/HPhi -sdry $1\n')
+        f.write(f'  command {self.SlurmHelper.computer_settings.hphi_build_loc}src/HPhi '+
+                 '-sdry $1\n')
         f.write('}\n\n')
 
         # prepare cli and pipe to prep standard python script
         stan_cli_str = ' '.join(list(map(str, stan_cli_list)))
 
         param_str = ' '.join([f'{p:.12f}' for p in prod[:-1]])
-        f.write(f'python3 '+ self.PWD+'/src/sweeps/prepare_standard_cli.py ' \
+        f.write(f'python3 '+ self.ProjectDirectory+'/src/sweeps/prepare_standard_cli.py ' \
                 + stan_cli_str + ' ' + param_str + '\n\n')
 
         stan_str = '/'.join(filename.split('/')[:-1])+'/stan.in\n'
@@ -172,19 +178,18 @@ class HPhiSweeps:
         f.write(f'HPhiDRY stan.in\n\n')
 
         append_cli_str = ' '.join([f'{hd:.12f}' for hd in hdirection])
-        f.write(f'python3 '+ self.PWD+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' \
-                + append_cli_str + '\n\n')
+        f.write(f'python3 '+ self.ProjectDirectory+'/src/sweeps/append_cli.py ' f'{prod[-1]:.12f} ' +
+                append_cli_str + '\n\n')
 
-        f.write(f'export OMP_NUM_THREADS={int(self.NThreads)}\n')
         f.write('HPhiSC -e namelist.def\n')
-        f.write(f'export OMP_NUM_THREADS=1\n\n')
 
         output_mode = stan_cli_list[-2]
         if output_mode == 'correlation':
             #-append to geometry.dat
-            f.write(f'python3 '+ self.PWD+'/src/ssf_post.py geometry.dat\n')
+            f.write(f'python3 '+ self.ProjectDirectory+'/src/ssf_post.py geometry.dat\n')
             #-run greenr2k to calculate reciprocal lattice properties
-            f.write(f'{self.HPhiBuild}tool/greenr2k namelist.def geometry.dat\n')
+            f.write(f'{self.SlurmHelper.computer_settings.hphi_build_loc}tool/greenr2k'+
+                    ' namelist.def geometry.dat\n')
             #-create gp_script.gp
             gp_script_str = '/'.join(filename.split('/')[:-1])+'/gp_script.gp'
             g = open(gp_script_str, 'w')
@@ -195,19 +200,19 @@ class HPhiSweeps:
 
         f.close()
 
-    def create_genesis_script(self, slurm_helper):
+    def create_genesis_script(self):
         f = open(f'{self.JobTitle}.sh','w+')
         f.write('#!/bin/bash\n\n')
-        f.write(slurm_helper.slurm_settings)
+        f.write(self.SlurmHelper.slurm_settings)
         f.write(f'#SBATCH --job-name={self.JobTitle}\n\n')
-        f.write('cd $SLURM_SUBMIT_DIR\n\n')
         f.write('module purge\n')
         f.write('module load python/3.9.8\n')      #for executing various scripts
         f.write('module load intel/2019u4 intelmpi/2019u4 scalapack\n') #for HPhi
         f.write('module load gnu-parallel\n\n')      #for the following
-        f.write(slurm_helper.parallel_command+\
+        f.write(self.SlurmHelper.submit_dir)
+        f.write(self.SlurmHelper.create_node_list_file)
+        f.write(self.SlurmHelper.parallel_command+\
             f'--joblog {self.OutputPath}/{self.JobTitle}.out '  +\
-            slurm_helper.postamble  +\
             f'< {self.JobTitle}.lst\n')
         f.close()
 

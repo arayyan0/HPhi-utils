@@ -6,22 +6,22 @@ import sys
 #---------------------------------------
 #---------------------logistical details
 #---------------------------------------
-run = 2
+run = 0
 
-what_computer = 'niagara'  #can be either 'laptop', 'home', or 'niagara'
+what_computer = 'niagara'  #can be either 'laptop', 'niagara_gpfs, or 'niagara'
 computer_settings = ComputerPresets().computers[what_computer]
 
-Nnodes        = 1
+Nnodes        = 2
 hyperthreadQ  = True
 Nmpi          = pow(2,0)               #MUST BE a power of 2 for S=1/2
-Nomp          = 80
+Nomp          = 40
 time          = '01:30:00'
 slurm_helper  = SLURMHelper(computer_settings, Nnodes, hyperthreadQ, Nmpi, Nomp, time)
 
 slurm_helper.calculate_relevant_integers()
 slurm_helper.create_local_sim_commands()
 slurm_helper.create_submit_script_texts()
-slurm_helper.print_salloc()
+print(slurm_helper.salloc_command)
 #-----------------------------------------------------------
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
