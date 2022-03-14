@@ -188,7 +188,7 @@ class StandardInput:
         f.write(f'Lanczos_max = {self.lanczos_max}\n')
         f.write(f'exct = {self.exct}\n')
         f.write(f'LanczosTarget = {self.lanczos_target}\n')
-        f.write(f'LanczosEps = {self.lanczos_eps}')
+        f.write(f'LanczosEps = {self.lanczos_eps}\n')
         f.write(f'OutputMode = "{self.output_mode}"\n')
         f.write(f'EigenVecIO = "{self.eigenvec_io}"\n')
         if not self.ham_io == None:
