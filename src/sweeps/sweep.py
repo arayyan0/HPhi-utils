@@ -32,10 +32,11 @@ restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
 exct           = 1         #number of states to converge
 output_mode    = 'none'    #select 'none', 'correlation', 'full'
+lanczos_eps    = 10
 ham_model      = 'eps'          #gen_jtau, eps, jkggp
 
 stan_cli_list = [method, sites, shape, restart, lanczos_max,
-                   exct, output_mode, ham_model]
+                   exct, output_mode, lanczos_eps, ham_model]
 #-------------------------------------------------------
 #---------------------parameter entry: min, max, spacing
 #-------------------------------------------------------
