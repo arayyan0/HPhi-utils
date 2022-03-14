@@ -23,8 +23,8 @@ class ComputerPresets:
         hphi_niagara = 'scratch/h/hykee/arayyan/HPhi.build/'
 
         self.add_computer(      'laptop',               hphi_laptop, False,  4)
-        self.add_computer('niagara_gpfs', '/gpfs/fs0/'+hphi_niagara,  True, 40)
-        self.add_computer(     'niagara',              hphi_niagara,  True, 40)
+        self.add_computer('niagara_gpfs', '/gpfs/fs0/'+hphi_niagara, False, 40)
+        self.add_computer(     'niagara', '/gpfs/fs0/'+hphi_niagara, False, 40)
 
 @dataclass
 class SLURMHelper:
@@ -47,7 +47,7 @@ class SLURMHelper:
            raise SystemExit
     #
     def create_local_sim_commands(self):
-        self.hphi_command = f'srun' if self.computer_settings.mpiQ else ''
+        self.hphi_command = f'srun -n 1' if self.computer_settings.mpiQ else ''
 
     def create_submit_script_texts(self):
         slurm_settings = ''
@@ -65,7 +65,7 @@ class SLURMHelper:
 
         parallel_command  = ''
         parallel_command += 'parallel --delay 0.1 '
-        parallel_command += '--jobs $SLURM_NTASKS_PER_NODE ' if self.Ntasksperpoint > 1 else ''
+        parallel_command += '--jobs $SLURM_NTASKS_PER_NODE '
         parallel_command += '--sshloginfile ./node_list_${SLURM_JOB_ID} --workdir $PWD ' \
                             if self.Nnodes > 1 else ''
         parallel_command += '--env OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK '
