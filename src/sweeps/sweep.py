@@ -8,13 +8,13 @@ import sys
 #---------------------------------------
 run = 0
 
-what_computer = 'niagara'  #can be either 'laptop', 'niagara_gpfs, or 'niagara'
+what_computer = 'niagara_gpfs'  #can be either 'laptop', 'niagara_gpfs, or 'niagara'
 computer_settings = ComputerPresets().computers[what_computer]
 
-Nnodes        = 2
+Nnodes        = 1
 hyperthreadQ  = True
 Nmpi          = pow(2,0)               #MUST BE a power of 2 for S=1/2
-Nomp          = 40
+Nomp          = 20
 time          = '01:30:00'
 slurm_helper  = SLURMHelper(computer_settings, Nnodes, hyperthreadQ, Nmpi, Nomp, time)
 
@@ -26,14 +26,14 @@ print(slurm_helper.salloc_command)
 #-----------------------------general command line arguments
 #-----------------------------------------------------------
 method         = 'CG'
-sites          = 12
-shape          = 'RH60'
+sites          = 24
+shape          = 'RH120'
 restart        = 'None'    #select 'None', 'Restart_out', 'Restart_in', 'Restart'
 lanczos_max    = 2000      #number of Lanczos/LOBCG steps
 exct           = 1         #number of states to converge
 output_mode    = 'none'    #select 'none', 'correlation', 'full'
-lanczos_eps    = 10
-ham_model      = 'eps'          #gen_jtau, eps, jkggp
+lanczos_eps    = 10        
+ham_model      = 'eps'     #gen_jtau, eps, jkggp
 
 stan_cli_list = [method, sites, shape, restart, lanczos_max,
                    exct, output_mode, lanczos_eps, ham_model]
@@ -51,7 +51,7 @@ if ham_model == 'jtaujbjqjo':
 
 elif ham_model == 'eps':
     #model 2: jtau and jq fixed, tuning jo and jb
-    eps_val_list, eps_label = [0.000, 0.000, 0.100], "eps"
+    eps_val_list, eps_label = [-0.070, 0.080, 0.010], "eps"
     params_list = [eps_val_list]
     params_label_list = [eps_label]
 
@@ -65,13 +65,13 @@ elif ham_model == 'jkggp':
     params_label_list = [j_label, k_label, g_label, gp_label]
 
 #----z-bond anisotropy
-ga_val_list, ga_label = [0.05, 0.05, 0.01], "ga"
+ga_val_list, ga_label = [0.000, 0.000, 0.01], "ga"
 
 params_list += [ga_val_list]
 params_label_list += [ga_label]
 
 #----magnetic field magnitude
-h_val_list,  h_label = [1.000, 1.245, 0.005], "h"
+h_val_list,  h_label = [0.000, 0.000, 0.005], "h"
 
 params_list += [h_val_list]
 params_label_list += [h_label]
