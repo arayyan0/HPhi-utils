@@ -20,12 +20,13 @@ lanczos_max    = int(sys.argv[5]) #number of Lanczos/LOBCG steps
 exct           = int(sys.argv[6]) #number of states to converge
 lanczos_target = exct+1           #target eigenenergy for convergence
 output_mode    = sys.argv[7]      #select 'none', 'correlation', 'full'
+lanczos_eps    = sys.argv[8]
 eigenvec_io    = 'None'           #select 'None', 'Out', 'In'
 ham_io         = 'None'
 #--------------------Hamiltonian parameters
-ham_model = sys.argv[8] #'gen_jtau', 'eps', 'jkggp'
+ham_model = sys.argv[9] #'gen_jtau', 'eps', 'jkggp'
 
-params = sys.argv[9:]
+params = sys.argv[10:]
 params_float = list(map(float, params))
 
 if ham_model == 'jtaujbjqjo':
@@ -46,8 +47,8 @@ simulation     = StandardInput(model, method, lattice,
                                a0, a1,
                                two_sz,
                                H0, H1, H2,
-                               restart, lanczos_max, exct, lanczos_target, output_mode,
-                               eigenvec_io, ham_io)
+                               restart, lanczos_max, exct, lanczos_target, lanczos_eps,
+                               output_mode, eigenvec_io, ham_io)
 simulation.check_availability() #since I only implemented a subset of HPhi features
 simulation.ensure_consistency()
 
