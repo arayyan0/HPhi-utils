@@ -1,4 +1,4 @@
-from lib_post import HPhiOutput, OneDParameterSweep, create_plot_filename
+from lib_post import ParameterSpace, HPhiOutput, OneDParameterSweep, create_plot_filename
 import glob
 import os
 import numpy as np
@@ -7,16 +7,15 @@ import matplotlib.pyplot as plt
 ################################################################################
 ################################################################################
 ################################################################################
-which = '3.10.2022_12_eps0_h'
-number = 2
-which_parameter_to_sort = 'h'
+which = '3.19.2022_24_eps_h'
+number = 1
 ################################################################################
 ################################################################################
 ################################################################################
 
 data_folder = f'archive/{which}/jobrun_{number}/'
 print(data_folder)
-plot_folder = data_folder + f'plots/'
+plot_folder = data_folder + 'plots/'
 if not os.path.exists(plot_folder):
     os.makedirs(plot_folder)
 
@@ -40,18 +39,4 @@ for i, file in enumerate(file_lst):
     # plt.savefig( create_plot_filename('lanczos_', plot_folder, param_block))
     # plt.close()
 
-sweep = OneDParameterSweep(paramslist,energieslist,labels,which_parameter_to_sort)
-
-# spectrum plot
-# if sweep.numstates > 1:
-#     ylim = 0.01
-#     fig = sweep.plot_spectrum(ylim)
-#     plt.savefig(create_plot_filename('spectrum_', plot_folder, ''))
-#     plt.show()
-#     plt.close()
-
-# gs and derivs plot
-fig = sweep.plot_gs_properties()
-plt.savefig(create_plot_filename('gsenergy_', plot_folder, ''))
-plt.show()
-plt.close()
+p_space = ParameterSpace(paramslist, labels, energieslist, plot_folder)

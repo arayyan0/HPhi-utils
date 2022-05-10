@@ -1,10 +1,12 @@
 import numpy as np
 from dataclasses import dataclass
 from math import sqrt
+import pandas as pd
 import os
 import glob
 import matplotlib.pyplot as plt
 import re
+import scipy.signal as sig
 
 pi = np.pi
 
@@ -147,12 +149,19 @@ class EnergyDerivatives:
 
     Colors = ["blue", "magenta", "green"] #nondark background
 
-    def calculate_derivs(self):
+    def calculate_chi_peaks(self, chi, min_prom):
+        chi_min = min_prom
+        chi_max = None
+        a, a_prop = sig.find_peaks(chi, prominence=(chi_min, chi_max))
+        return a, a_prop
+
+    def calculate_derivs(self, min_prom):
         self.m = -np.gradient(self.elist, self.paramlist, edge_order=2) / self.factor
         self.chi = np.gradient(self.m, self.paramlist, edge_order=2) / self.factor
+        self.chi_peaks, self.chi_peaks_prop = self.calculate_chi_peaks(self.chi, min_prom)
 
-    def plot_energy_derivs(self):
-        self.calculate_derivs()
+    def plot_energy_derivs(self,min_prom):
+        self.calculate_derivs(min_prom)
         functions = [self.elist, self.m, self.chi]
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
         axes = [ax1, ax2, ax2.twinx()]
@@ -172,6 +181,14 @@ class EnergyDerivatives:
 
         ax1.grid(True, axis='x')
         ax2.grid(True, axis='x')
+
+        ax2.plot(self.paramlist[self.chi_peaks], self.chi[self.chi_peaks], 'x',
+                 c='black', markersize=10)
+
+        ax2.vlines(x=self.paramlist[self.chi_peaks],
+                   ymin=self.chi[self.chi_peaks]-self.chi_peaks_prop['prominences'],
+                   ymax=self.chi[self.chi_peaks],
+                   colors='black')
 
         plt.xlim(min(self.paramlist), max(self.paramlist))
         # plt.xlim(0,1.5)
@@ -246,8 +263,8 @@ class OneDParameterSweep:
 
         self.swept_param_index = self.param_labels.index(which_parameter_to_sort)
 
-        idx          = np.argsort(self.params[:, self.swept_param_index])
-        self.params   = self.params[idx,:]
+        idx          = np.argsort(self.params)
+        self.params   = self.params[idx]
         self.energies = self.energies[idx]
 
     def plot_spectrum(self, ylim):
@@ -271,14 +288,122 @@ class OneDParameterSweep:
         plt.legend()
         return fig
 
-    def plot_gs_properties(self):
-        e_deriv = EnergyDerivatives(self.params[:,self.swept_param_index],
+    def plot_gs_properties(self,min_prom):
+        e_deriv = EnergyDerivatives(self.params,
                                     self.energies[:,0],
                                     self.swept_param_info.factor)
         labels = e_deriv.return_labels(self.swept_param_info.TeXlabel_for_derivs)
-        fig = e_deriv.plot_energy_derivs()
+        fig = e_deriv.plot_energy_derivs(min_prom)
         for ax, label, color in zip(fig.get_axes(),labels, EnergyDerivatives.Colors):
             ax.set_ylabel(label, rotation = "horizontal",fontsize=12,labelpad=20,color=color)
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fig.get_axes()[1].set_xlabel('$'+self.swept_param_info.TeXlabel+'$')
-        return fig
+
+
+        peak_info = self.params[e_deriv.chi_peaks], e_deriv.chi_peaks_prop['prominences']
+        return fig, peak_info
+
+
+class ParameterSpace:
+    def __init__(self, paramslist, label, energieslist, plot_folder):
+        self.params = pd.DataFrame(np.array(paramslist))
+        self.params.columns = label
+        self.const_param_dict = self.classify_constants()
+        self.space_axes   = [p for p in self.params.columns if self.const_param_dict[p] is False]
+
+        for p in self.space_axes:
+            sweep_folder = plot_folder + f'{p}_sweeps/'
+            if not os.path.exists(sweep_folder):
+                os.makedirs(sweep_folder)
+
+        energiesarray = np.array(energieslist)
+        self.numstates = energiesarray.shape[1]
+        self.data = self.params.assign(energies=energiesarray)
+        self.create_cuts(plot_folder)
+
+    def classify_constants(self):
+        num_data, num_params = self.params.shape
+        const_list = []
+        nontrivial_list = []
+        for p in self.params.columns:
+            #check if constant
+            a      = self.params[f'{p}']
+            a_test = a[0]*np.ones(num_data)
+            constQ = np.allclose(a, a_test)
+            const_list.append(constQ)
+
+        return dict(zip(self.params.columns, const_list))
+
+    def create_cuts(self, plot_folder, data_folder):
+        '''
+        warning: for now, this only works when you have TWO non-constant parameters
+                 please ensure that every jobrun folder only has maximum two
+                 parameters that are being
+        '''
+        # print(self.space_axes)
+        min_prom=0.0
+        peaks = []
+        for i in range(len(self.space_axes)):
+            fixed_p = self.space_axes[i]
+
+            p_data_column = self.data[f'{fixed_p}']
+            #figure out the values along this axis
+            unique_p = np.unique(p_data_column)
+            # print(p_data_column)
+            # print(unique_p)
+
+            for value in unique_p:
+                eps = 1e-6
+                data_trunc = self.data.loc[np.abs(self.data[f'{fixed_p}'] - value)<eps]
+
+                swept_param_index = i-1
+                swept_param_label = self.params.columns[swept_param_index]
+
+                n_points = data_trunc.shape[0]
+                if n_points <= 3:
+                    continue
+
+                print(f"sweeping over {swept_param_label} at fixed {fixed_p} = {value}")
+
+                # print(data_trunc[swept_param_label].to_numpy())
+                # print(data_trunc['energies'].to_numpy().reshape(n_points,self.numstates))
+                # print(self.params.columns.to_list())
+                # print(swept_param_label)
+
+                sweep = OneDParameterSweep(data_trunc[swept_param_label].to_numpy(),
+                                           data_trunc['energies'].to_numpy().reshape(n_points,self.numstates),
+                                           self.params.columns.to_list(),
+                                           swept_param_label)
+
+                ###spectrum plot
+                # if sweep.numstates > 1:
+                #     ylim = 0.01
+                #     fig = sweep.plot_spectrum(ylim)
+                #     plt.savefig(create_plot_filename(f'spectrum_{fixed_p}_{value:.12f}_', sweep_folder, ''))
+                #     plt.show()
+                #     plt.close()
+
+                ###gsenergy and derivs plot
+                fig, peak_info = sweep.plot_gs_properties(min_prom)
+                # sweep_folder = plot_folder + f'{swept_param_label}_sweeps/'
+                # plt.savefig(create_plot_filename(f'gsenergy_{fixed_p}_{value:.12f}_', sweep_folder, ''))
+                # plt.show()
+                plt.close()
+
+                peak_info1, peak_info2 = peak_info
+
+                for var, prom in zip(peak_info1, peak_info2):
+                    if swept_param_label == 'h':
+                        x, y = value, var
+                        color = 'blue'
+                    #x,y if swept_param_label = x;
+                    #y,x if swept_param_label = y;
+                    elif swept_param_label == 'eps':
+                        x, y = var, value
+                        color = 'red'
+                    peak_tuple = [x, y, prom]
+                    peaks.append(peak_tuple)
+
+        peaks = np.array(peaks)
+
+        np.savetxt(data_folder+f'prom_{min_prom:.3f}.txt', peaks)
