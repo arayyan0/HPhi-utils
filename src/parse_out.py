@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 ################################################################################
 ################################################################################
 ################################################################################
-which = '3.19.2022_24_eps_h'
+which = '5.19.2022_24_eps_h_detailed'
 number = 1
 ################################################################################
 ################################################################################
@@ -39,4 +39,4 @@ for i, file in enumerate(file_lst):
     # plt.savefig( create_plot_filename('lanczos_', plot_folder, param_block))
     # plt.close()
 
-p_space = ParameterSpace(paramslist, labels, energieslist, plot_folder)
+p_space = ParameterSpace(paramslist, labels, energieslist, plot_folder, data_folder)
