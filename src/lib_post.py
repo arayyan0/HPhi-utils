@@ -4,6 +4,7 @@ from math import sqrt
 import pandas as pd
 import os
 import glob
+import matplotlib.patches as ptch
 import matplotlib.pyplot as plt
 import re
 import scipy.signal as sig
@@ -49,11 +50,81 @@ class TriangularSymmetryPoints:
         f.write(text)
         f.close()
 
+class TriangularReciprocalSpaceGrid:
+    def __init__(self, density, size):
+        self.l=density
+        self.m=size
+        a1 = np.array([ 1/2, np.sqrt(3)/2, 0])
+        a2 = np.array([-1/2, np.sqrt(3)/2, 0])
+        a3 = np.array([   0,            0, 1])
+
+        det = a1 @ np.cross(a2,a3)
+        self.b1  = 2*pi*np.cross(a2, a3)/det
+        self.b2  = 2*pi*np.cross(a3, a1)/det
+        self.b3  = 2*pi*np.cross(a1, a2)/det
+
+        self.usetex = True
+        show_points = False
+
+        self.create_kmeshgrid(show_points)
+
+    def add_bz_to_fig(self, ax, scale):
+        #first crystal BZ
+        bz2 = ptch.RegularPolygon((0, 0), 6, np.linalg.norm((2 * self.b1[:2] + self.b2[:2]) / 3)/scale, pi / 6, fill=False,color='r')
+        ax.add_patch(bz2)
+        #second crystal BZ
+        bz3 = ptch.RegularPolygon((0, 0), 6, np.linalg.norm(self.b1[:2])/scale, 0, fill=False,color='g')
+        ax.add_patch(bz3)
+        # #sqrt(3) x sqrt(3) reduced 1st BZ
+        # bz4 = ptch.RegularPolygon((0, 0), 6, np.linalg.norm(b1 + b2)/3/scale, 0, fill=False,color='b')
+        # ax.add_patch(bz4)
+
+        ax.set_xlim(-9/scale, 9/scale)
+        ax.set_ylim(-9/scale, 9/scale)
+
+        if abs(scale - 2*pi) <= 10**(-8):
+            denom = f'/$2\pi$'
+        else:
+            denom = f'/{scale:.3f}'
+
+        ax.set_xlabel(r'$k_x$'+denom, usetex=self.usetex)
+        ax.set_ylabel(r'$k_y$'+denom, usetex=self.usetex)
+
+        ticks = np.linspace(-1,1,4+1)
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
+        ax.set_xticklabels([f'${val:.1f}$' for val in ticks],usetex=self.usetex)
+        ax.set_yticklabels([f'${val:.1f}$' for val in ticks],usetex=self.usetex)
+
+
+    def create_kmeshgrid(self, show_points):
+        oneD1, oneD2 = [np.array(range(-m * l, m * l+1))/l for l,m in zip([self.l, self.l],[self.m,self.m])]
+        oneD3 = [0]
+
+        n1, n2, n3 = np.meshgrid(oneD1, oneD2, oneD3)
+
+        self.kx, self.ky, self.kz = [n1*self.b1[i]+n2*self.b2[i]+n3*self.b3[i] for i in [0,1,2]]
+
+    def plot_kmeshgrid(self, show_points):
+        fig, ax = plt.subplots()
+        self.scale = 2*pi
+        ax.set_aspect('equal')
+        self.add_bz_to_fig(ax, self.scale)
+
+        if show_points: #plot the grid to see if its legit (or not)
+            ax.plot(self.kx[:,:,0]/self.scale, self.ky[:,:,0]/self.scale, '+', c='lightgrey',zorder=0)
+            plt.show()
+            plt.close()
+
+        return fig, ax
+
 class HPhiOutput:
     def __init__(self, folder):
         #extract number of sites
         self.LocSpinFile = glob.glob(folder + 'locspn.def')[0]
         self.NSites = self.extract_number_sites()
+
+        self.GeometryFile = glob.glob(folder + 'geometry.dat')[0]
 
         #extract lanczos step energies. Warning: full precision is not provided in this file.
         self.LanczosStepFile = glob.glob(folder + 'output/*Lanczos_Step*')[0]
@@ -74,6 +145,181 @@ class HPhiOutput:
             energies, self.GroundState = self.extract_energies(file)
             self.Energies        =        energies/self.NSites
 
+        # check if correlation files are present. if so, extract them
+        self.CorrOutputQ = True
+        self.CorrOutputFiles = glob.glob(folder+ 'output/*cisajs*')
+        try:
+            file = self.CorrOutputFiles[0]
+        except:
+            self.CorrOutputQ = False
+            print("Can't find corr. func. files at " + folder)
+
+    def create_corr_funcs(self):
+        sort_list = np.argsort([len(x) for x in self.CorrOutputFiles])
+        sorted_files = np.array(self.CorrOutputFiles, dtype=str)[sort_list]
+
+        single_body_info = self.extract_corr_funcs(sorted_files[0], range(4))
+        double_body_info = self.extract_corr_funcs(sorted_files[1], range(8))
+
+        self.SingleBodyRSpace = self.create_single_body(single_body_info)
+        self.DoubleBodyRSpace = self.create_double_body(double_body_info)
+
+        list = []
+        for i in range(self.NSites):
+            for j in range(self.NSites):
+                result = np.outer(self.SingleBodyRSpace[i], self.SingleBodyRSpace[j])
+                list.append(result)
+
+        self.SingleBodySqRSpace = np.array(list,dtype=complex)
+
+    def extract_corr_funcs(self, file, which_cols):
+        last_ind = which_cols[-1]
+
+        values = np.array(
+                    [x[0] + 1j*x[1] for x in
+                        np.loadtxt(file, usecols=(last_ind+1,last_ind+2), dtype=float)
+                    ],
+                    dtype=complex
+                )
+        return values
+
+    def create_single_body(self, values):
+        single_body_list = []
+        for i in range(self.NSites):
+            x = values[4*i:4*(i+1)]
+            Sminus = x[2]
+            Splus  = x[1]
+            Sz     = (x[0]-x[3])/2
+            spin_xyz = np.array([Sminus, Splus, Sz], dtype=complex) @ spherical_to_cubic
+            single_body_list.append(spin_xyz)
+
+        return np.array(single_body_list, dtype=complex)
+
+    def create_double_body(self, values):
+        z = lambda i, s, sp, j, t, tp : tp + 2*t + 4*j + 4*self.NSites*sp + \
+                                        8*self.NSites*s + 16*self.NSites*i
+
+        double_body_list = []
+        for i in range(self.NSites):
+            for j in range(self.NSites):
+                x = [
+                    values[z(i,0,0,j,0,0)],#0
+                    values[z(i,0,0,j,0,1)],#1
+                    values[z(i,0,0,j,1,0)],#2
+                    values[z(i,0,0,j,1,1)],#3
+                    values[z(i,0,1,j,0,0)],#4
+                    values[z(i,0,1,j,0,1)],#5
+                    values[z(i,0,1,j,1,0)],#6
+                    values[z(i,0,1,j,1,1)],#7
+                    values[z(i,1,0,j,0,0)],#8
+                    values[z(i,1,0,j,0,1)],#9
+                    values[z(i,1,0,j,1,0)],#10
+                    values[z(i,1,0,j,1,1)],#11
+                    values[z(i,1,1,j,0,0)],#12
+                    values[z(i,1,1,j,0,1)],#13
+                    values[z(i,1,1,j,1,0)],#14
+                    values[z(i,1,1,j,1,1)] #15
+                    ]
+                SminusSminus = x[10]
+                SminusSplus  = x[9]
+                SminusSz     = (x[8] - x[11])/2
+                SplusSminus  = x[6]
+                SplusSplus   = x[5]
+                SplusSz      = (x[4] - x[7])/2
+                SzSplus      = (x[1] - x[13])/2
+                SzSminus     = (x[2] - x[14])/2
+                SzSz         = (x[0] - x[3] - x[12] + x[15])/4
+
+                spinspin_spherical = np.array([
+                    [SminusSminus,SminusSplus,SminusSz],
+                    [ SplusSminus, SplusSplus, SplusSz],
+                    [    SzSminus,    SzSplus,    SzSz],
+                ],
+                dtype=complex)
+
+                spinspin_xyz = spherical_to_cubic.T @ spinspin_spherical @ spherical_to_cubic
+                double_body_list.append(spinspin_xyz)
+
+        return np.array(double_body_list, dtype=complex)
+
+    def create_phase_factors(self, grid):
+        Kx, Ky, Kz = [np.reshape(x, -1) for x in [grid.kx, grid.ky, grid.kz]]
+        K = np.stack((Kx,Ky,Kz)).T
+
+        self.extract_geometry_file()
+
+        phase_factors = []
+        for i, Kv in enumerate(K):
+            phase_i = np.exp(1j * np.einsum('i,ji', Kv, self.SpinLocations))
+            phase_j = np.exp(-1j * np.einsum('i,ji', Kv, self.SpinLocations))
+            phases = np.einsum('i,j->ij', phase_i, phase_j).reshape(self.NSites**2)
+            phase_factors.append(phases)
+
+        self.PhaseFactors = np.array(phase_factors ,dtype=complex)
+
+    def create_recip_corr_funcs(self,grid):
+        self.create_phase_factors(grid)
+        self.SS_MatQ  = np.einsum('ks,stu->ktu', self.PhaseFactors, self.DoubleBodyRSpace)/self.NSites
+
+        self.Chi_MatQ  = np.einsum('ks,stu->ktu', self.PhaseFactors, self.DoubleBodyRSpace-
+                                                                    self.SingleBodySqRSpace)/self.NSites
+
+
+    def plot_ssf(self,grid,cb_options,plot_folder,i):
+        ssf_or_chi_label = 'ssf'
+
+        if ssf_or_chi_label == 'ssf':
+            spin_or_chi = self.SS_MatQ
+        elif ssf_or_chi_label == 'chi':
+            spin_or_chi = self.Chi_MatQ
+
+        sxsx = spin_or_chi[:,0,0]
+        sysy = spin_or_chi[:,1,1]
+        szsz = spin_or_chi[:,2,2]
+        sdots = sxsx+sysy+szsz
+        sxsysysx = spin_or_chi[:,0,1] + spin_or_chi[:,1,0]
+        syszszsy = spin_or_chi[:,1,2] + spin_or_chi[:,2,1]
+        szsxsxsz = spin_or_chi[:,2,0] + spin_or_chi[:,0,2]
+        sxsxszsz = sdots - sysy
+
+        mats = [sxsx, sysy, szsz, sdots, sxsxszsz, sxsysysx, syszszsy, szsxsxsz,]
+        labels = ['SxSx','SySy','SzSz','SdotS', 'SxSxSzSz','SxSySySx', 'SySzSzSy', 'SzSxSxSz']
+
+        for mat, label in zip(mats, labels):
+            param_folder = plot_folder+f'/{i}/{ssf_or_chi_label}/'
+            if not os.path.exists(param_folder):
+                os.makedirs(param_folder)
+
+            fig, ax = grid.plot_kmeshgrid(False)
+
+            fraction, orientation, colormap = cb_options
+            c = ax.scatter(grid.kx[:,:,0]/grid.scale,grid.ky[:,:,0]/grid.scale,
+                       c=np.reshape(mat, grid.kx[:,:,0].shape),cmap=colormap,edgecolors="none",zorder=0)
+            cbar = fig.colorbar(c, fraction=fraction, orientation=orientation)
+            cbar.set_label(r'$s_\mathbf{k}$',rotation=0,labelpad=10,usetex=grid.usetex,size=15)
+            # plt.show()
+            plt.savefig(param_folder+label+'.pdf')
+            plt.close()
+
+        pass
+
+
+    def extract_geometry_file(self):
+        indices  = np.loadtxt(self.GeometryFile, skiprows=7, dtype=int)
+        a1,a2,a3 = np.loadtxt(self.GeometryFile, max_rows=3, dtype=float)
+
+        trans_ind = np.loadtxt(self.GeometryFile, skiprows=4, max_rows=3, dtype=int)
+
+        #CAREFUL, HARDCODING HONEYCOMB
+        print('CAREFUL. HONEYCOMB SUBLATTICE VECTORS ARE HARDCODED.')
+        sb = [np.zeros(3), (a1+a2)/3]
+
+        locs = []
+        for i in range(self.NSites):
+            locs.append(indices[i,0]*a1+indices[i,1]*a2+indices[i,2]*a3+sb[indices[i,3]])
+
+        self.SpinLocations = np.array(locs)
+        print(self.SpinLocations.shape)
 
     def extract_number_sites(self):
         '''
@@ -207,6 +453,12 @@ def create_plot_filename(plot_type, plot_folder, param_block):
     str = plot_folder + plot_type + ''.join(param_block) + '.pdf'
     return str
 
+spherical_to_cubic = np.array([
+    [1,+1j,0],
+    [1,-1j,0],
+    [0,0,2]
+], dtype = complex)/2
+
 @dataclass
 class ParameterInfo:
     TeXlabel: str
@@ -305,7 +557,7 @@ class OneDParameterSweep:
 
 
 class ParameterSpace:
-    def __init__(self, paramslist, label, energieslist, plot_folder):
+    def __init__(self, paramslist, label, energieslist, plot_folder, data_folder):
         self.params = pd.DataFrame(np.array(paramslist))
         self.params.columns = label
         self.const_param_dict = self.classify_constants()
@@ -319,7 +571,7 @@ class ParameterSpace:
         energiesarray = np.array(energieslist)
         self.numstates = energiesarray.shape[1]
         self.data = self.params.assign(energies=energiesarray)
-        self.create_cuts(plot_folder)
+        self.create_cuts(plot_folder, data_folder)
 
     def classify_constants(self):
         num_data, num_params = self.params.shape
@@ -385,8 +637,8 @@ class ParameterSpace:
 
                 ###gsenergy and derivs plot
                 fig, peak_info = sweep.plot_gs_properties(min_prom)
-                # sweep_folder = plot_folder + f'{swept_param_label}_sweeps/'
-                # plt.savefig(create_plot_filename(f'gsenergy_{fixed_p}_{value:.12f}_', sweep_folder, ''))
+                sweep_folder = plot_folder + f'{swept_param_label}_sweeps/'
+                plt.savefig(create_plot_filename(f'gsenergy_{fixed_p}_{value:.12f}_', sweep_folder, ''))
                 # plt.show()
                 plt.close()
 
